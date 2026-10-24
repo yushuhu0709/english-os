@@ -8,6 +8,7 @@ import { VoiceStatus } from "@/components/Audio";
 import { currentDay, dueReviews, fmtMin, liveRoundMs, requirements, stepStatus } from "@/lib/progress";
 import { useAppState } from "@/lib/store";
 import { useHydrated, useNow } from "@/lib/useHydrated";
+import { dailyQueue } from "@/lib/daily";
 
 export default function Dashboard() {
   const s = useAppState();
@@ -84,8 +85,9 @@ export default function Dashboard() {
               <div className="stat"><b>{openErrors}</b><span>未解决的错误</span></div>
             </div>
           </section>
+          <DailyCard s={s} />
           <section className="card">
-            <div className="row between"><h3 style={{ margin: 0 }}>今天到期的复习</h3><span className="badge">{due.length}</span></div>
+            <div className="row between"><h3 style={{ margin: 0 }}>课内复习（第 7 步）</h3><span className="badge">{due.length}</span></div>
             {due.length ? (
               <ul className="small" style={{ marginTop: 8 }}>{due.map((t) => <li key={t.id}>{t.label}</li>)}</ul>
             ) : <p className="small muted" style={{ marginTop: 8, marginBottom: 0 }}>没有到期的复习。复习会出现在每天训练的第 7 步。</p>}
@@ -104,5 +106,22 @@ export default function Dashboard() {
       <h3 style={{ marginTop: 32 }}>本周进度</h3>
       <DayStrip s={s} />
     </div>
+  );
+}
+
+function DailyCard({ s }: { s: ReturnType<typeof useAppState> }) {
+  const q = dailyQueue(s);
+  const left = q.items.filter((i) => !q.doneToday.includes(i.skill)).length;
+  return (
+    <section className="card" style={{ borderColor: left ? "var(--accent)" : undefined }}>
+      <div className="row between">
+        <h3 style={{ margin: 0 }}>每日复习</h3>
+        <span className={`badge ${left ? "accent" : "ok"}`}>{left ? `今天 ${left} 项` : q.items.length ? "今天已完成" : "暂无"}</span>
+      </div>
+      <p className="small muted" style={{ margin: "8px 0" }}>
+        {left ? `按你的错题排好的 5–10 分钟复习。${q.streak ? `已连续 ${q.streak} 天。` : ""}` : q.items.length ? `已连续 ${q.streak} 天，明天再来。` : "答错的题和记录的问题会自动排进来。"}
+      </p>
+      {left ? <Link href="/review" className="btn primary" style={{ width: "100%" }}>开始每日复习 →</Link> : <Link href="/review" className="btn sm">查看复习安排</Link>}
+    </section>
   );
 }
