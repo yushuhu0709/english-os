@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { Nav } from "@/components/Nav";
+import { AutoBackup } from "@/components/AutoBackup";
 
 export const metadata: Metadata = {
-  title: "English OS · Week 1 SSBE Bootcamp",
-  description: "Seven-day Modern Standard Southern British English pronunciation bootcamp.",
+  title: "English OS · SSBE Pronunciation Bootcamp",
+  description: "Two-week Modern Standard Southern British English pronunciation bootcamp.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -12,6 +13,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="zh-CN">
       <body>
         <Nav />
+        <AutoBackup />
         <main className="shell">{children}</main>
       </body>
     </html>

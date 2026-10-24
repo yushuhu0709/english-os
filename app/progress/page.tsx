@@ -9,6 +9,7 @@ import { resolveError } from "@/lib/progress";
 import { buildReport, reportMarkdown, type Report } from "@/lib/report";
 import { replaceState, useAppState, type AppState } from "@/lib/store";
 import { useHydrated } from "@/lib/useHydrated";
+import { backupNow, restoreFromBackup, useBackupStatus } from "@/lib/backup";
 
 const pct = (x: { n: number; c: number }) => (x.n ? `${Math.round((x.c / x.n) * 100)}%` : "—");
 
@@ -247,10 +248,28 @@ function Backup({ s }: { s: AppState }) {
     replaceState({ ...data.state, settings: { ...data.state.settings, apiKey: s.settings.apiKey } });
     setMsg("导入完成。");
   }
+  const auto = useBackupStatus();
+  async function restore() {
+    if (!confirm("从自动备份恢复会用备份里的进度覆盖这台浏览器上的进度（录音会合并）。继续吗？")) return;
+    try { setMsg(await restoreFromBackup()); } catch (e) { setMsg(`恢复失败：${(e as Error).message}`); }
+  }
   return (
     <section className="card flat no-print">
       <h3>备份</h3>
-      <p className="small muted">所有数据只保存在这个浏览器里（进度在 localStorage，录音和截图在 IndexedDB）。清除浏览器数据会丢失记录，建议每天训练后导出一次备份。</p>
+      <div className={`notice ${auto.phase === "error" ? "" : "info"} small`} style={{ marginBottom: 12 }}>
+        <b>自动备份：</b>
+        {auto.phase === "ok" ? <>已开启。最近一次 {auto.savedAt ? new Date(auto.savedAt).toLocaleString() : "—"}，共 {auto.files ?? 0} 个录音和文件。位置：<span className="kbd">{auto.dir}</span></>
+          : auto.phase === "saving" ? <>正在备份…</>
+          : auto.phase === "error" ? <>备份失败：{auto.message}</>
+          : auto.phase === "unavailable" ? <>{auto.message}</>
+          : <>等待第一次备份…</>}
+        <div className="tiny muted" style={{ marginTop: 4 }}>每次进度变化、每段新录音都会自动复制到这台 Mac 的文件夹里，每天另存一份快照（保留 60 天）。API key 不会被备份。</div>
+        <div className="row" style={{ marginTop: 8 }}>
+          <button className="btn sm" onClick={() => void backupNow()}>立即备份</button>
+          <button className="btn sm" onClick={restore}>从自动备份恢复</button>
+        </div>
+      </div>
+      <p className="small muted">进度保存在这个浏览器里（localStorage），录音和截图在 IndexedDB。换浏览器或清除网站数据后，可以用上面的「从自动备份恢复」找回。也可以手动导出一份文件：</p>
       <div className="row">
         <button className="btn" onClick={exportAll}>导出全部数据（含录音）</button>
         <input ref={input} type="file" accept="application/json" hidden onChange={(e) => importAll(e.target.files?.[0])} />
