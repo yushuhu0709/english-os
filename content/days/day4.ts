@@ -1,0 +1,148 @@
+import type { DayPlan, QuizItem } from "../types";
+
+const hear = (id: string, skill: string, say: string, options: string[], explain: string): QuizItem => ({
+  id: `d4-${id}`, kind: "hear", prompt: "你听到的是哪个词？", say, options, answer: options.indexOf(say), skill, explain,
+});
+const know = (id: string, skill: string, prompt: string, options: string[], answer: number, explain: string): QuizItem => ({
+  id: `d4-${id}`, kind: "know", prompt, options, answer, skill, explain,
+});
+
+export const day4: DayPlan = {
+  day: 4,
+  title: "英式辅音",
+  titleEn: "SSBE Consonants",
+  outcome: "练习清浊、送气、th、v/w、l/n/r，以及完整的词尾辅音。",
+  minMinutes: 60,
+  blocks: { understand: 20, perceive: 40, shadow: 20, review: 10 },
+  intro: "辅音的关键是三件事：在哪里阻碍气流（位置）、怎样阻碍（方式）、声带振不振动（清浊）。今天还要特别处理词尾辅音，这是中文母语者最容易丢掉的部分。",
+  learn: [
+    {
+      id: "d4-table",
+      title: "24 个辅音：位置 × 方式 × 清浊",
+      paragraphs: [
+        "下表横向是发音位置（从嘴唇到喉咙），纵向是发音方式。成对的辅音只差清浊。点击音标听例词。",
+        "《1000小时》特别强调舌尖的起始位置：齿间（θ ð）、齿龈（t d n l s z）、齿龈后（r），每个位置都要找准。",
+      ],
+      visual: "consonants",
+      source: "《1000小时》3.2 辅音（按舌尖起始位置分类）",
+    },
+    {
+      id: "d4-th",
+      title: "两个 th：/θ/ 和 /ð/",
+      paragraphs: [
+        "think 的 /θ/ 是清音，this 的 /ð/ 是浊音，舌位相同：舌尖平放，轻触上门牙下缘或在上下齿之间，气流从舌尖和牙齿之间的缝隙流出。",
+        "不要咬住舌头，也不要用力伸出很长；接触要轻，气流才能通过。最常见的替代：/θ/ → /s/ 或 /f/（think → sink / fink），/ð/ → /z/ 或 /d/（then → zen / den）。",
+        "马徐骏的笔记特别指出：the、this、that 中的 th 是浊音 /ð/，不能用「声带不振动」去读所有 th。",
+      ],
+      phonemes: [
+        { ipa: "θ", word: "think", wordIpa: "θɪŋk", cue: "舌尖触上齿，只有气流" },
+        { ipa: "s", word: "sink", wordIpa: "sɪŋk", cue: "舌尖在齿龈，不碰牙齿" },
+        { ipa: "ð", word: "then", wordIpa: "ðen", cue: "同 /θ/ 舌位，加声带振动" },
+        { ipa: "z", word: "zen", wordIpa: "zen", cue: "舌尖在齿龈，振动" },
+      ],
+      source: "马徐骏 02（th 不只有一种读音）",
+    },
+    {
+      id: "d4-vw-lnr",
+      title: "/v/ 与 /w/；/l/ /n/ /r/",
+      paragraphs: [
+        "/v/ 是上齿轻放在下唇上的浊摩擦音；/w/ 是双唇收圆、不碰牙齿的滑音。对着镜子：/v/ 能看到上门牙，/w/ 看不到。",
+        "/n/ 的气流走鼻腔；/l/ 的舌尖同样抵住齿龈，但气流从舌头两侧流出（捏住鼻子还能发出 /l/）。词尾的 l 是较暗的 dark l：舌后部稍抬，像带一点 /ʊ/ 的音色，但舌尖仍要碰到齿龈。",
+        "SSBE 的 /r/ 只出现在元音前：舌尖向齿龈后部抬起但不接触，嘴唇略圆。car、more、hair 结尾没有 r。",
+      ],
+      phonemes: [
+        { ipa: "v", word: "vest", wordIpa: "vest", cue: "上齿碰下唇，振动" },
+        { ipa: "w", word: "west", wordIpa: "west", cue: "双唇收圆，不碰牙" },
+        { ipa: "l", word: "light", wordIpa: "laɪt", cue: "舌尖抵齿龈，气流走两侧" },
+        { ipa: "n", word: "night", wordIpa: "naɪt", cue: "舌尖抵齿龈，气流走鼻腔" },
+        { ipa: "r", word: "right", wordIpa: "raɪt", cue: "舌尖抬起不接触，略圆唇" },
+        { ipa: "ɫ", word: "feel", wordIpa: "fiːl", cue: "词尾 dark l，舌尖仍要碰齿龈" },
+      ],
+      source: "马徐骏 02（m 与 n 的阻塞位置）；《1000小时》4.4（l 的舌尖必须完整贴住龈脊）",
+    },
+    {
+      id: "d4-aspiration",
+      title: "送气，以及英式的 t",
+      paragraphs: [
+        "重读音节开头的 /p t k/ 带一股明显的气流：pin [pʰɪn]。在 s 后面不送气：spin。手背放在嘴前可以感觉到区别。",
+        "英式的 t 和美式不同：water、better、city 中间的 t 是真正的 [t]，不弹舌成 d。在辅音前或词尾，SSBE 说话者常用喉塞音 [ʔ]（that man、not now），这是自然现象，但本周以清晰的 [t] 为目标。",
+      ],
+      phonemes: [
+        { ipa: "pʰ", word: "pin", wordIpa: "pɪn", cue: "送气" },
+        { ipa: "p", word: "spin", wordIpa: "spɪn", cue: "s 后不送气" },
+        { ipa: "t", word: "water", wordIpa: "ˈwɔːtə", cue: "清晰 [t]，不弹舌" },
+        { ipa: "t", word: "better", wordIpa: "ˈbetə", cue: "清晰 [t]" },
+      ],
+    },
+    {
+      id: "d4-final",
+      title: "词尾辅音和辅音丛",
+      paragraphs: [
+        "普通话的音节大多以元音或 n/ng 结尾，所以英语词尾的辅音很容易被吞掉，或者在后面加一个元音（book → 'booke'）。",
+        "-ed 有三种读音：/t/（asked, helped）、/d/（played, lived）、/ɪd/（wanted, needed）。-s 也有 /s/ /z/ /ɪz/ 三种。",
+        "词尾的 /p t k/ 可以不爆破，但口型必须到位，前面的元音长度也要对（第二天学过：浊音前元音更长）。",
+      ],
+      phonemes: [
+        { ipa: "kt", word: "asked", wordIpa: "ɑːskt", cue: "/skt/ 三个辅音都要到位" },
+        { ipa: "d", word: "played", wordIpa: "pleɪd", cue: "-ed 读 /d/" },
+        { ipa: "ɪd", word: "wanted", wordIpa: "ˈwɒntɪd", cue: "-ed 读 /ɪd/" },
+        { ipa: "nθs", word: "months", wordIpa: "mʌnθs", cue: "舌尖从齿龈到齿间再回来" },
+      ],
+      source: "马徐骏 02（-tion 是拼写组合，不是一个音素）",
+    },
+  ],
+  listen: [
+    { id: "d4-l1", text: "think sink fink", ipa: "θɪŋk sɪŋk fɪŋk" },
+    { id: "d4-l2", text: "then den zen", ipa: "ðen den zen" },
+    { id: "d4-l3", text: "vest west vine wine", ipa: "vest west vaɪn waɪn" },
+    { id: "d4-l4", text: "light night right", ipa: "laɪt naɪt raɪt" },
+    { id: "d4-l5", text: "pin spin top stop", ipa: "pɪn spɪn tɒp stɒp", note: "听送气的差别。" },
+    { id: "d4-l6", text: "water better city", ipa: "ˈwɔːtə ˈbetə ˈsɪti", note: "英式清晰的 t。" },
+    { id: "d4-l7", text: "asked helped wanted played", ipa: "ɑːskt helpt ˈwɒntɪd pleɪd" },
+    { id: "d4-l8", text: "sip ship chip jeep", ipa: "sɪp ʃɪp tʃɪp dʒiːp" },
+  ],
+  identify: [
+    hear("thin", "θ-s", "thin", ["thin", "sin"], "thin 的舌尖碰到牙齿。"),
+    hear("sink", "θ-s", "sink", ["think", "sink"], "sink /sɪŋk/。"),
+    hear("three", "θ-s", "free", ["three", "free"], "free 以 /f/ 开头。"),
+    hear("mouth", "θ-s", "mouth", ["mouth", "mouse"], "mouth /maʊθ/ 以 /θ/ 结尾。"),
+    hear("they", "ð-z-d", "day", ["they", "day"], "day 以 /d/ 开头。"),
+    hear("though", "ð-z-d", "though", ["though", "dough"], "though /ðəʊ/。"),
+    hear("wine", "v-w", "wine", ["vine", "wine"], "wine：双唇收圆。"),
+    hear("very", "v-w", "very", ["very", "worry"], "very：上齿碰下唇。"),
+    hear("light", "l-n-r", "light", ["light", "night", "right"], "light /laɪt/。"),
+    hear("low", "l-n-r", "row", ["low", "no", "row"], "row /rəʊ/：舌尖不接触。"),
+    hear("feel", "l-n-r", "fill", ["feel", "fill"], "fill /fɪl/：短元音 + dark l。"),
+    hear("ship", "ʃ-s-tʃ", "ship", ["sip", "ship", "chip"], "ship 以 /ʃ/ 开头。"),
+    hear("cheap", "ʃ-s-tʃ", "cheap", ["sheep", "cheap", "jeep"], "cheap 以 /tʃ/ 开头。"),
+    hear("rise", "final-consonants", "rice", ["rice", "rise"], "rice 以 /s/ 结尾，元音较短。"),
+    hear("cap", "final-consonants", "cab", ["cap", "cab"], "cab 以 /b/ 结尾，元音更长。"),
+    know("k1", "final-consonants", "asked 的 -ed 读？", ["/t/", "/d/", "/ɪd/"], 0, "清辅音 /k/ 后读 /t/：/ɑːskt/。"),
+    know("k2", "final-consonants", "wanted 的 -ed 读？", ["/t/", "/d/", "/ɪd/"], 2, "/t/ /d/ 之后读 /ɪd/。"),
+    know("k3", "aspiration", "SSBE 中 water 中间的 t 怎么读？", ["弹舌像 d", "清晰的 [t]", "完全不发音"], 1, "英式不弹舌。美式才会把 water 读成 [ˈwɑːɾɚ]。"),
+    know("k4", "aspiration", "pin 和 spin 的 p 哪个送气更强？", ["pin", "spin", "一样"], 0, "重读音节开头的 /p/ 送气，s 后的不送气。"),
+    know("k5", "ð-z-d", "this 中 th 的发音是？", ["清音 /θ/", "浊音 /ð/"], 1, "this、the、that、they 等功能词都是浊音 /ð/。"),
+  ],
+  produce: [
+    { id: "d4-p1", text: "think sink", ipa: "θɪŋk sɪŋk", cue: "think 舌尖轻触上齿再吹气；sink 舌尖退回齿龈。", skill: "θ-s" },
+    { id: "d4-p2", text: "three free", ipa: "θriː friː", cue: "three 用舌尖，不用嘴唇；free 下唇碰上齿。", skill: "θ-s" },
+    { id: "d4-p3", text: "then den", ipa: "ðen den", cue: "/ð/ 舌尖在齿间振动，/d/ 舌尖在齿龈爆破。", skill: "ð-z-d" },
+    { id: "d4-p4", text: "this that these those", ipa: "ðɪs ðæt ðiːz ðəʊz", cue: "全部浊音 /ð/，轻而快，但舌尖要到牙齿。", skill: "ð-z-d" },
+    { id: "d4-p5", text: "vest west", ipa: "vest west", cue: "对镜：vest 看得到上门牙，west 看不到。", skill: "v-w" },
+    { id: "d4-p6", text: "light night right", ipa: "laɪt naɪt raɪt", cue: "l 和 n 舌尖都抵齿龈；r 舌尖抬起但不碰。", skill: "l-n-r" },
+    { id: "d4-p7", text: "feel fill full", ipa: "fiːl fɪl fʊl", cue: "词尾 l 舌尖一定要碰到齿龈，不要变成 o。", skill: "l-n-r" },
+    { id: "d4-p8", text: "pin spin water", ipa: "pɪn spɪn ˈwɔːtə", cue: "手背放嘴前：pin 有气，spin 没有；water 的 t 清晰。", skill: "aspiration" },
+    { id: "d4-p9", text: "asked helped months", ipa: "ɑːskt helpt mʌnθs", cue: "慢速把每个辅音做完整，不加元音，再提速。", skill: "final-consonants" },
+    { id: "d4-p10", text: "she chose cheap shoes", ipa: "ʃiː tʃəʊz tʃiːp ʃuːz", cue: "/ʃ/ 嘴唇前突；/tʃ/ 先堵住再放开。", skill: "ʃ-s-tʃ" },
+  ],
+  shadow: [
+    { id: "d4-s1", text: "I think three things are worth it.", marked: "I THINK THREE THINGS are WORTH it.", ipa: "aɪ ˈθɪŋk ˈθriː ˈθɪŋz ə ˈwɜːθ ɪt", focus: "五个 /θ/；are 弱读为 /ə/。", skill: "θ-s" },
+    { id: "d4-s2", text: "They said that this is the other one.", marked: "They SAID that THIS is the OTHer ONE.", ipa: "ðeɪ ˈsed ðət ˈðɪs ɪz ði ˈʌðə ˈwʌn", focus: "六个 /ð/，都是浊音。", skill: "ð-z-d" },
+    { id: "d4-s3", text: "We have a very wet vest.", marked: "We HAVE a VERy WET VEST.", ipa: "wi ˈhæv ə ˈveri ˈwet ˈvest", focus: "v 与 w 交替出现。", skill: "v-w" },
+    { id: "d4-s4", text: "Lily read a novel late at night.", marked: "LILy READ a NOVel LATE at NIGHT.", ipa: "ˈlɪli ˈred ə ˈnɒvl ˈleɪt ət ˈnaɪt", focus: "l 与 n 的区别；novel 结尾的音节 /l/。", skill: "l-n-r" },
+    { id: "d4-s5", text: "Peter put the kettle on.", marked: "PETer PUT the KETtle ON.", ipa: "ˈpiːtə ˈpʊt ðə ˈketl ˈɒn", focus: "送气的 p；Peter、kettle 中的 t 清晰，不弹舌。", skill: "aspiration" },
+    { id: "d4-s6", text: "She asked for the texts last month.", marked: "She ASKED for the TEXTS LAST MONTH.", ipa: "ʃi ˈɑːskt fə ðə ˈteksts ˈlɑːst ˈmʌnθ", focus: "asked、texts、last、month 的词尾辅音丛。", skill: "final-consonants" },
+  ],
+  reviewPrompts: ["th 的舌尖位置稳定吗？在句子里会不会退回 s / z？", "录音里能听到自己的词尾辅音吗？", "water、better 有没有不自觉地弹舌？"],
+  skills: ["θ-s", "ð-z-d", "v-w", "l-n-r", "aspiration", "final-consonants", "ʃ-s-tʃ", "voicing"],
+};
