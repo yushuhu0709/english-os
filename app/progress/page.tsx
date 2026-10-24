@@ -8,7 +8,7 @@ import { allImages, allRecordings, allRefAudio, blobToDataUrl, dataUrlToBlob, sa
 import { resolveError } from "@/lib/progress";
 import { buildReport, reportMarkdown, type Report } from "@/lib/report";
 import { WEEKS } from "@/content/days";
-import { currentDay } from "@/lib/progress";
+import { activeWeek } from "@/lib/progress";
 import { replaceState, useAppState, type AppState } from "@/lib/store";
 import { useHydrated } from "@/lib/useHydrated";
 import { backupNow, restoreFromBackup, useBackupStatus } from "@/lib/backup";
@@ -19,8 +19,7 @@ export default function ProgressPage() {
   const s = useAppState();
   const h = useHydrated();
   const [picked, setPicked] = useState<number | null>(null);
-  const defaultWeek = s.days[WEEKS[1].firstDay]?.startedAt || currentDay(s) > WEEKS[0].lastDay ? 2 : 1;
-  const week = WEEKS.find((w) => w.week === (picked ?? defaultWeek)) ?? WEEKS[0];
+  const week = WEEKS.find((w) => w.week === picked) ?? activeWeek(s);
   const r = useMemo(() => buildReport(s, week), [s, week]);
   if (!h) return <div className="page-head"><h1>Progress</h1><p className="muted">加载中…</p></div>;
   return (

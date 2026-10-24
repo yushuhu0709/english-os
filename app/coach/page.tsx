@@ -7,9 +7,9 @@ import { SLOW_RATE } from "@/lib/tts";
 import { ElsaForm, ElsaList } from "@/components/Elsa";
 import { analyzeError, analyzeSentence, drillFor, VERIFY } from "@/lib/coach";
 import { ELSA_GUIDANCE } from "@/lib/elsa";
-import { addError, currentDay } from "@/lib/progress";
+import { activeWeek, addError, currentDay } from "@/lib/progress";
 import { buildReport } from "@/lib/report";
-import { WEEKS, weekOf } from "@/content/days";
+import { WEEKS } from "@/content/days";
 import { uid, update, useAppState } from "@/lib/store";
 import { useHydrated } from "@/lib/useHydrated";
 
@@ -191,7 +191,7 @@ function ElsaTab() {
 
 function ReviewTab({ askAi }: { askAi: (q: string) => void }) {
   const s = useAppState();
-  const r = useMemo(() => buildReport(s, weekOf(currentDay(s))), [s]);
+  const r = useMemo(() => buildReport(s, activeWeek(s)), [s]);
   const active = s.reviews.filter((x) => !x.mastered).sort((a, b) => a.dueDay - b.dueDay);
   return (
     <div className="stack">
