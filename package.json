@@ -2,14 +2,17 @@
   "name": "english-os",
   "version": "0.1.0",
   "private": true,
-  "description": "English OS Phase 1 — Seven-Day SSBE Pronunciation Bootcamp",
+  "description": "English OS — SSBE pronunciation bootcamp (Weeks 1–2)",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "test:logic": "tsx tests/logic.test.ts",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "autostart:install": "bash scripts/install-autostart.sh",
+    "autostart:uninstall": "bash scripts/uninstall-autostart.sh",
+    "restart": "launchctl kickstart -k gui/$(id -u)/com.english-os.server"
   },
   "dependencies": {
     "next": "15.5.27",
@@ -24,5 +27,7 @@
     "tsx": "4.20.5",
     "typescript": "5.9.2"
   },
-  "engines": { "node": ">=18.18" }
+  "engines": {
+    "node": ">=18.18"
+  }
 }
