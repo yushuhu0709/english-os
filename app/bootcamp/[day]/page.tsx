@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useState } from "react";
-import { DAY_TITLES, getDay } from "@/content/days";
+import { DAY_TITLES, getDay, weekOf } from "@/content/days";
 import { DaySession } from "@/components/DaySession";
 import { isUnlocked } from "@/lib/progress";
 import { useAppState } from "@/lib/store";
@@ -23,7 +23,7 @@ export default function DayPage() {
   return (
     <div>
       <div className="page-head" style={{ paddingBottom: 14 }}>
-        <div className="eyebrow"><Link href="/bootcamp" style={{ textDecoration: "none" }}>7-Day Bootcamp</Link> / Day {n}</div>
+        <div className="eyebrow"><Link href="/bootcamp" style={{ textDecoration: "none" }}>Bootcamp</Link> / Week {weekOf(n).week} / Day {n}</div>
         <h1>{meta.title} <span className="muted" style={{ fontSize: "1.1rem", fontWeight: 400 }}>{meta.titleEn}</span></h1>
         <p>{meta.outcome}</p>
       </div>
@@ -34,7 +34,7 @@ export default function DayPage() {
       ) : !isUnlocked(s, n) && !preview ? (
         <div className="card">
           <h3>建议先完成 Day {n - 1}</h3>
-          <p className="muted">第一周按顺序设计：后一天会复习前一天的错误。你也可以先预览内容，但计时和记录会照常保存。</p>
+          <p className="muted">课程按顺序设计：后一天会复习前一天的错误。你也可以先预览内容，但计时和记录会照常保存。</p>
           <div className="row">
             <Link className="btn primary" href={`/bootcamp/${n - 1}`}>去 Day {n - 1}</Link>
             <button className="btn" onClick={() => setPreview(true)}>仍然打开</button>

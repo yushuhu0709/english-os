@@ -17,6 +17,7 @@ export default defineConfig({
   },
   webServer: {
     command: "npx next start -p 3123",
+    env: { ENGLISH_OS_BACKUP_DIR: "test-results/backup" },
     url: "http://localhost:3123",
     reuseExistingServer: true,
     timeout: 60_000,

@@ -7,6 +7,8 @@ import { PlayButton } from "@/components/Audio";
 import { allImages, allRecordings, allRefAudio, blobToDataUrl, dataUrlToBlob, saveImage, saveRecording, saveRefAudio } from "@/lib/audioDb";
 import { resolveError } from "@/lib/progress";
 import { buildReport, reportMarkdown, type Report } from "@/lib/report";
+import { WEEKS } from "@/content/days";
+import { currentDay } from "@/lib/progress";
 import { replaceState, useAppState, type AppState } from "@/lib/store";
 import { useHydrated } from "@/lib/useHydrated";
 import { backupNow, restoreFromBackup, useBackupStatus } from "@/lib/backup";
@@ -16,7 +18,10 @@ const pct = (x: { n: number; c: number }) => (x.n ? `${Math.round((x.c / x.n) * 
 export default function ProgressPage() {
   const s = useAppState();
   const h = useHydrated();
-  const r = useMemo(() => buildReport(s), [s]);
+  const [picked, setPicked] = useState<number | null>(null);
+  const defaultWeek = s.days[WEEKS[1].firstDay]?.startedAt || currentDay(s) > WEEKS[0].lastDay ? 2 : 1;
+  const week = WEEKS.find((w) => w.week === (picked ?? defaultWeek)) ?? WEEKS[0];
+  const r = useMemo(() => buildReport(s, week), [s, week]);
   if (!h) return <div className="page-head"><h1>Progress</h1><p className="muted">加载中…</p></div>;
   return (
     <div>
@@ -24,6 +29,13 @@ export default function ProgressPage() {
         <div className="eyebrow">Progress</div>
         <h1>训练记录</h1>
         <p>所有数据都来自你在这台设备上的真实训练：计时器时长、辨音题第一次作答、录音、自评、错误和复习。</p>
+        <div className="row no-print" style={{ marginTop: 10 }} role="tablist">
+          {WEEKS.map((w) => (
+            <button key={w.week} role="tab" aria-selected={w.week === week.week} className={`btn sm ${w.week === week.week ? "dark" : ""}`} onClick={() => setPicked(w.week)}>
+              Week {w.week} · {w.title.split("：")[1] ?? w.title}
+            </button>
+          ))}
+        </div>
       </div>
       <div className="stack">
         <History r={r} />
@@ -90,16 +102,16 @@ function Weak({ r }: { r: Report }) {
 function Compare({ r }: { r: Report }) {
   return (
     <section className="card">
-      <h2>Day 1 与 Day 7 对比</h2>
+      <h2>Day {r.week.baselineDay} 与 Day {r.week.retestDay} 对比</h2>
       <div className="grid grid-2" style={{ alignItems: "start" }}>
         <div>
-          <h3>基线听辨（同一套 26 题）</h3>
+          <h3>基线听辨（同一套 {r.week.baselineQuiz.length} 题）</h3>
           <div className="row" style={{ gap: 28, margin: "6px 0 12px" }}>
-            <div className="stat"><b>{pct(r.baseline.d1)}</b><span>Day 1</span></div>
-            <div className="stat"><b>{pct(r.baseline.d7)}</b><span>Day 7</span></div>
+            <div className="stat"><b>{pct(r.baseline.d1)}</b><span>Day {r.week.baselineDay}</span></div>
+            <div className="stat"><b>{pct(r.baseline.d7)}</b><span>Day {r.week.retestDay}</span></div>
           </div>
           <table className="t">
-            <thead><tr><th>项目</th><th>Day 1</th><th>Day 7</th></tr></thead>
+            <thead><tr><th>项目</th><th>Day {r.week.baselineDay}</th><th>Day {r.week.retestDay}</th></tr></thead>
             <tbody>{r.baseline.bySkill.map((b) => <tr key={b.skill}><td className="small">{b.label}</td><td>{pct(b.d1)}</td><td>{pct(b.d7)}</td></tr>)}</tbody>
           </table>
         </div>
@@ -111,8 +123,8 @@ function Compare({ r }: { r: Report }) {
                 <div className="small" style={{ marginBottom: 6 }}>{p.text}</div>
                 <div className="row">
                   <PlayButton text={p.text} label="示范" />
-                  {p.d1 ? <TakeChip id={p.d1} label={`Day 1${p.d1Rating ? ` · ${p.d1Rating}/5` : ""}`} /> : <span className="badge">Day 1 无录音</span>}
-                  {p.d7 ? <TakeChip id={p.d7} label={`Day 7${p.d7Rating ? ` · ${p.d7Rating}/5` : ""}`} /> : <span className="badge">Day 7 待录</span>}
+                  {p.d1 ? <TakeChip id={p.d1} label={`Day ${r.week.baselineDay}${p.d1Rating ? ` · ${p.d1Rating}/5` : ""}`} /> : <span className="badge">Day {r.week.baselineDay} 无录音</span>}
+                  {p.d7 ? <TakeChip id={p.d7} label={`Day ${r.week.retestDay}${p.d7Rating ? ` · ${p.d7Rating}/5` : ""}`} /> : <span className="badge">Day {r.week.retestDay} 待录</span>}
                 </div>
               </div>
             ))}
@@ -158,7 +170,7 @@ function Report({ r }: { r: Report }) {
     const blob = new Blob([reportMarkdown(r)], { type: "text/markdown" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = `week1-pronunciation-report-${new Date().toISOString().slice(0, 10)}.md`;
+    a.download = `week${r.week.week}-report-${new Date().toISOString().slice(0, 10)}.md`;
     a.click();
   }
   const improved = r.baseline.items.filter((i) => i.d1 === false && i.d7 === true);
@@ -168,8 +180,8 @@ function Report({ r }: { r: Report }) {
     <section className="card" id="report" style={{ borderColor: r.ready ? "var(--accent)" : undefined }}>
       <div className="row between">
         <div>
-          <div className="eyebrow">Week 1 Pronunciation Report</div>
-          <h2 style={{ margin: 0 }}>{r.ready ? "第一周发音报告" : "第一周发音报告（完成 Day 7 后生成）"}</h2>
+          <div className="eyebrow">{r.week.reportTitle}</div>
+          <h2 style={{ margin: 0 }}>{r.week.week === 1 ? "第一周发音报告" : "第二周语流报告"}{r.ready ? "" : `（完成 Day ${r.week.retestDay} 后生成）`}</h2>
         </div>
         <div className="row no-print">
           <button className="btn sm" onClick={download}>下载 Markdown</button>
@@ -178,18 +190,18 @@ function Report({ r }: { r: Report }) {
       </div>
       {!r.ready ? (
         <div className="notice" style={{ marginTop: 12 }}>
-          正式报告需要 Day 7 复测数据。目前未完成：Day {r.missingDays.join("、")}。下面是基于已有数据的中期预览。
+          正式报告需要 Day {r.week.retestDay} 复测数据。目前未完成：Day {r.missingDays.join("、")}。下面是基于已有数据的中期预览。
         </div>
       ) : null}
 
       <h3 style={{ marginTop: 18 }}>1. 七天训练结果</h3>
-      <p className="small">完成 {r.days.filter((d) => d.completed).length}/7 天，累计 {r.totalMinutes} 分钟，录音 {r.days.reduce((a, d) => a + d.recordings, 0)} 段。每天的详细数据见上方「训练历史」。</p>
+      <p className="small">完成 {r.days.filter((d) => d.completed).length}/{r.days.length} 天，累计 {r.totalMinutes} 分钟，录音 {r.days.reduce((a, d) => a + d.recordings, 0)} 段。每天的详细数据见上方「训练历史」。</p>
 
-      <h3>2. Day 1 和 Day 7 的可比录音</h3>
-      <p className="small">{r.recordingPairs.filter((p) => p.d1 && p.d7).length}/{r.recordingPairs.length} 组材料两天都有录音，可在上方「Day 1 与 Day 7 对比」中逐段回放。自评分数：{r.recordingPairs.filter((p) => p.d1Rating && p.d7Rating).map((p) => `${p.d1Rating}→${p.d7Rating}`).join("，") || "—"}。</p>
+      <h3>2. Day {r.week.baselineDay} 和 Day {r.week.retestDay} 的可比录音</h3>
+      <p className="small">{r.recordingPairs.filter((p) => p.d1 && p.d7).length}/{r.recordingPairs.length} 组材料两天都有录音，可在上方「Day {r.week.baselineDay} 与 Day {r.week.retestDay} 对比」中逐段回放。自评分数：{r.recordingPairs.filter((p) => p.d1Rating && p.d7Rating).map((p) => `${p.d1Rating}→${p.d7Rating}`).join("，") || "—"}。</p>
 
       <h3>3. 主要辨音错误和变化</h3>
-      <p className="small">基线听辨正确率：Day 1 {pct(r.baseline.d1)} → Day 7 {pct(r.baseline.d7)}。</p>
+      <p className="small">基线听辨正确率：Day {r.week.baselineDay} {pct(r.baseline.d1)} → Day {r.week.retestDay} {pct(r.baseline.d7)}。</p>
       <ul className="small">
         <li>改善：{improved.map((i) => i.word).join("、") || "无"}</li>
         <li>仍然听错：{still.map((i) => i.word).join("、") || "无"}</li>
@@ -206,11 +218,11 @@ function Report({ r }: { r: Report }) {
         <ul className="small">{r.weaknesses.slice(0, 8).map((w) => <li key={w.skill}><b>{w.label}</b>：{w.evidence.slice(0, 3).join("；")}</li>)}</ul>
       ) : <p className="small muted">没有记录到明显弱项。</p>}
 
-      <h3>6. 第二周建议的三个最高优先级项目</h3>
+      <h3>6. {r.week.week === 1 ? "第二周要特别留意的三个项目" : "接下来的三个优先项目"}</h3>
       {r.priorities.length ? (
         <ol className="small">{r.priorities.map((w) => <li key={w.skill}><b>{w.label}</b>。依据：{w.evidence[0]}。练习方向：{w.action}</li>)}</ol>
       ) : <p className="small muted">数据不足，暂无建议。</p>}
-      <p className="small muted">这只是建议，第二周课程不会自动开发。用完这一周后，把你的真实感受告诉我，再一起设计。</p>
+      <p className="small muted">{r.week.week === 1 ? "这些音会继续出现在每日复习里。第二周练语流时，把它们放进句子里也要留意。" : "这些项目会继续出现在每日复习里。下一步练什么，根据这份报告和你的感受一起决定。"}</p>
 
       <div className="notice info small" style={{ marginTop: 12 }}>
         <b>数据说明：</b>
