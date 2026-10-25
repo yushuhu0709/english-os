@@ -5,7 +5,7 @@ import { DAY_TITLES, getDay, TOTAL_DAYS, WEEKS, weekOf } from "@/content/days";
 import { STEP_LABEL, STEP_ORDER } from "@/content/types";
 import { DayStrip } from "@/components/DayStrip";
 import { VoiceStatus } from "@/components/Audio";
-import { currentDay, dueReviews, fmtMin, liveRoundMs, requirements, stepStatus } from "@/lib/progress";
+import { currentDay, dueReviews, fmtMin, liveRoundMs, planFor, requirements, stepStatus } from "@/lib/progress";
 import { useAppState } from "@/lib/store";
 import { useHydrated, useNow } from "@/lib/useHydrated";
 import { dailyQueue } from "@/lib/daily";
@@ -17,14 +17,15 @@ export default function Dashboard() {
   if (!h) return <div className="page-head"><h1>English OS</h1><p className="muted">加载本地进度…</p></div>;
 
   const day = currentDay(s);
-  const plan = getDay(day);
-  const meta = DAY_TITLES[day - 1];
   const rec = s.days[day];
+  const fullPlan = getDay(day);
+  const plan = fullPlan && planFor(fullPlan, rec);
+  const meta = DAY_TITLES[day - 1];
   const allDone = Object.values(s.days).filter((d) => d.completedAt).length;
   const week = weekOf(day);
   const weekDone = !!s.days[TOTAL_DAYS]?.completedAt; // whole bootcamp finished
   const justFinishedWeek1 = !!s.days[WEEKS[0].retestDay]?.completedAt && !s.days[WEEKS[1].firstDay]?.startedAt;
-  const due = dueReviews(s, day).filter((t) => !rec?.reviewed[t.id]);
+  const due = dueReviews(s, day, plan?.reviewLimit).filter((t) => !rec?.reviewed[t.id]);
   const totalMs = Object.values(s.days).reduce((a, d) => a + d.totalMs, 0);
   const recCount = Object.values(s.days).reduce((a, d) => a + Object.values(d.recordings).reduce((x, y) => x + y.length, 0), 0);
   const openErrors = s.errors.filter((e) => !e.resolved).length;
@@ -77,7 +78,7 @@ export default function Dashboard() {
                 {rec?.startedAt ? "继续今天的训练" : "开始今天的训练"} →
               </Link>
               <p className="tiny muted" style={{ marginTop: 8 }}>
-                目标 {Object.values(plan.blocks).reduce((a, b) => a + b, 0)} 分钟：{plan.blocks.understand} 理解 · {plan.blocks.perceive} 听辨与发音 · {plan.blocks.shadow} 跟读录音 · {plan.blocks.review} 复习
+                {rec?.short ? "短课 · " : ""}目标 {Object.values(plan.blocks).reduce((a, b) => a + b, 0)} 分钟：{plan.blocks.understand} 理解 · {plan.blocks.perceive} 听辨与发音 · {plan.blocks.shadow} 跟读录音 · {plan.blocks.review} 复习
               </p>
             </>
           ) : (

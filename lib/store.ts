@@ -49,6 +49,7 @@ export interface DayRecord {
   reviewed: Record<string, boolean>; // review task id -> done in this day's review
   selfAssessment?: { clarity: number; confidence: number; effort: number; note: string; at: string };
   noNewErrors?: boolean;
+  short?: boolean; // learner chose the short (~30 min) version of this day
   rounds: RoundSummary[];
   log: { start: string; end: string; ms: number; block: BlockId }[];
 }

@@ -83,6 +83,7 @@ export interface DayPlan {
   shadow: ShadowItem[];
   reviewPrompts: string[]; // reflection prompts for the review block
   skills: string[]; // skill ids this day trains
+  reviewLimit?: number; // max in-lesson review tasks (short lessons use fewer)
 }
 
 export const STEP_ORDER: StepId[] = ["learn", "listen", "identify", "produce", "record", "compare", "repeat"];

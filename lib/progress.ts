@@ -71,6 +71,46 @@ export function heartbeat(day: number) {
   });
 }
 
+// ── short lessons ────────────────────────────────────────────────
+// A ~30-minute version of any day, for busy days. It keeps the comparable
+// baseline items (so weekly reports still line up) and the most content-rich
+// teaching sections, and trims everything else. Applying it twice is harmless.
+export const SHORT = { minMinutes: 25, learn: 3, listen: 4, identify: 8, produce: 3, shadow: 2, reviews: 3 };
+export const SHORT_BLOCKS: Record<BlockId, number> = { understand: 6, perceive: 12, shadow: 9, review: 3 };
+
+const isBaseline = (id: string) => /^(base|b2)-/.test(id);
+
+export function shortPlan(plan: DayPlan): DayPlan {
+  const rich = (x: DayPlan["learn"][number]) => !!(x.phonemes?.length || x.bullets?.length || x.visual);
+  const pickedLearn = new Set(
+    [...plan.learn.filter(rich), ...plan.learn.filter((x) => !rich(x))].slice(0, SHORT.learn).map((x) => x.id),
+  );
+  const keepFirst = <T extends { id: string }>(xs: T[], n: number, keep: (x: T) => boolean = () => false) => {
+    let extra = 0;
+    return xs.filter((x) => keep(x) || extra++ < n);
+  };
+  return {
+    ...plan,
+    minMinutes: SHORT.minMinutes,
+    blocks: SHORT_BLOCKS,
+    learn: plan.learn.filter((x) => pickedLearn.has(x.id)),
+    listen: plan.listen.slice(0, SHORT.listen),
+    // baseline days keep the whole comparable set and add nothing else
+    identify: plan.identify.some((q) => isBaseline(q.id)) ? plan.identify.filter((q) => isBaseline(q.id)) : plan.identify.slice(0, SHORT.identify),
+    produce: plan.produce.slice(0, SHORT.produce),
+    shadow: plan.shadow.some((x) => x.baseline) ? plan.shadow.filter((x) => x.baseline) : keepFirst(plan.shadow, SHORT.shadow),
+    reviewLimit: SHORT.reviews,
+  };
+}
+
+export function planFor(plan: DayPlan, d: DayRecord | undefined): DayPlan {
+  return d?.short ? shortPlan(plan) : plan;
+}
+
+export function setShort(day: number, short: boolean) {
+  update((s) => { ensureDay(s, day).short = short; });
+}
+
 // ── step state ───────────────────────────────────────────────────
 export interface StepStatus {
   done: number;
@@ -80,7 +120,8 @@ export interface StepStatus {
 
 export const REQUIRED_REPS = 3;
 
-export function stepStatus(plan: DayPlan, d: DayRecord | undefined, step: StepId, s?: AppState): StepStatus {
+export function stepStatus(full: DayPlan, d: DayRecord | undefined, step: StepId, s?: AppState): StepStatus {
+  const plan = planFor(full, d);
   const r = d;
   const mk = (done: number, total: number): StepStatus => ({ done, total, complete: total === 0 ? true : done >= total });
   switch (step) {
@@ -97,7 +138,7 @@ export function stepStatus(plan: DayPlan, d: DayRecord | undefined, step: StepId
     case "compare":
       return mk(plan.shadow.filter((x) => !!r?.compared[x.id]).length, plan.shadow.length);
     case "repeat": {
-      const due = s ? dueReviews(s, plan.day) : [];
+      const due = s ? dueReviews(s, plan.day, plan.reviewLimit) : [];
       const reviewDone = due.filter((t) => r?.reviewed[t.id]).length;
       const reflect = (r?.selfAssessment ? 1 : 0) + (r?.noNewErrors || hasDayErrors(s, plan.day, "self") ? 1 : 0);
       return mk(reviewDone + reflect, due.length + 2);
@@ -116,8 +157,9 @@ export interface Requirement {
   detail: string;
 }
 
-export function requirements(plan: DayPlan, s: AppState, now = Date.now()): Requirement[] {
-  const d = s.days[plan.day];
+export function requirements(full: DayPlan, s: AppState, now = Date.now()): Requirement[] {
+  const d = s.days[full.day];
+  const plan = planFor(full, d);
   const mins = d ? liveRoundMs(d, now) / 60000 : 0;
   const steps: StepId[] = ["learn", "listen", "identify", "produce", "record", "compare", "repeat"];
   const st = Object.fromEntries(steps.map((k) => [k, stepStatus(plan, d, k, s)])) as Record<StepId, StepStatus>;
@@ -288,12 +330,12 @@ function scheduleFromDay(s: AppState, day: number) {
 export const MAX_REVIEWS_PER_DAY = 6;
 
 // At most six review tasks a day (the review block is 10 minutes); the rest roll over.
-export function dueReviews(s: AppState, day: number) {
+export function dueReviews(s: AppState, day: number, max = MAX_REVIEWS_PER_DAY) {
   const touched = s.reviews.filter((r) => r.history.some((h) => h.day === day));
   const pending = s.reviews
     .filter((r) => !r.mastered && r.dueDay <= day && !touched.includes(r))
     .sort((a, b) => a.dueDay - b.dueDay || a.createdDay - b.createdDay);
-  return [...touched, ...pending].slice(0, Math.max(MAX_REVIEWS_PER_DAY, touched.length));
+  return [...touched, ...pending].slice(0, Math.max(max, touched.length));
 }
 
 export function upcomingReviews(s: AppState, afterDay: number) {
