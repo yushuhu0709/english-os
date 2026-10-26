@@ -47,9 +47,26 @@ if [ -n "$pids" ]; then
   sleep 2
 fi
 
-launchctl bootout "gui/$(id -u)/$LABEL" 2>/dev/null || true
-launchctl bootstrap "gui/$(id -u)" "$PLIST"
-launchctl kickstart -k "gui/$(id -u)/$LABEL"
+DOMAIN="gui/$(id -u)"
+# bootout returns before the old job is fully gone; bootstrapping too early fails
+# with "5: Input/output error", so wait for it and retry a few times.
+launchctl bootout "$DOMAIN/$LABEL" 2>/dev/null || true
+for _ in $(seq 1 10); do launchctl print "$DOMAIN/$LABEL" >/dev/null 2>&1 || break; sleep 1; done
+launchctl enable "$DOMAIN/$LABEL" 2>/dev/null || true
+loaded=""
+for _ in 1 2 3; do
+  if launchctl bootstrap "$DOMAIN" "$PLIST" 2>/dev/null; then loaded=1; break; fi
+  launchctl print "$DOMAIN/$LABEL" >/dev/null 2>&1 && { loaded=1; break; }
+  sleep 2
+done
+[ -n "$loaded" ] || launchctl load -w "$PLIST" 2>/dev/null || true
+if ! launchctl print "$DOMAIN/$LABEL" >/dev/null 2>&1; then
+  echo "macOS refused to load the service."
+  echo "Check System Settings → General → Login Items & Extensions → Allow in the Background:"
+  echo "turn on bash (or English OS), then run this script again."
+  exit 1
+fi
+launchctl kickstart -k "$DOMAIN/$LABEL"
 
 echo -n "Waiting for http://localhost:$PORT "
 for _ in $(seq 1 120); do
