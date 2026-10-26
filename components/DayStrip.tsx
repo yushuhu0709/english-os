@@ -1,15 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { DAY_TITLES, getDay } from "@/content/days";
+import { DAY_TITLES, getDay, type WeekPlan } from "@/content/days";
 import { currentDay, quizAccuracy } from "@/lib/progress";
 import type { AppState } from "@/lib/store";
 
-export function DayStrip({ s, detailed = false }: { s: AppState; detailed?: boolean }) {
+export function DayStrip({ s, detailed = false, week }: { s: AppState; detailed?: boolean; week?: WeekPlan }) {
   const cur = currentDay(s);
+  const titles = week ? DAY_TITLES.filter((d) => d.day >= week.firstDay && d.day <= week.lastDay) : DAY_TITLES;
   return (
     <div className={`grid ${detailed ? "grid-2" : "grid-4"}`} style={detailed ? undefined : { gridTemplateColumns: "repeat(7, minmax(0,1fr))" }}>
-      {DAY_TITLES.map((d) => {
+      {titles.map((d) => {
         const rec = s.days[d.day];
         const plan = getDay(d.day);
         const done = !!rec?.completedAt;

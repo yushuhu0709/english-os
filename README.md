@@ -1,6 +1,8 @@
-# English OS · Phase 1：七天 SSBE 英式发音训练营
+# English OS：两周 SSBE 英式发音训练营
 
-只包含第一周（Day 1–7）。五个页面：Dashboard、7-Day Bootcamp、Pronunciation Lab、AI Coach、Progress。
+第一周（Day 1–7）练单个的音，第二周（Day 8–14）练语流：弱读、连读、省音同化与喉塞、节奏、语调、长段落跟读。每周第一天做基线测试，最后一天复测并生成报告。
+
+六个页面：Dashboard、Bootcamp、Daily Review（每日错题复习）、Pronunciation Lab、AI Coach、Progress。
 
 ## 在 Mac 上运行
 
@@ -39,16 +41,46 @@ npm start
 ANTHROPIC_API_KEY=sk-ant-... npm start
 ```
 
+## 开机自动启动（推荐）
+
+装一次之后，Mac 登录就会在后台自动运行，不用再开终端：
+
+```bash
+bash ~/english-os/scripts/install-autostart.sh
+```
+
+之后直接用浏览器打开 http://localhost:3000 ，或者双击 `scripts/English OS.command`（可以复制到桌面）。
+
+- 更新代码后重启：`npm run restart`（启动脚本发现代码有变化会自动重新构建）
+- 关掉自动启动：`bash ~/english-os/scripts/uninstall-autostart.sh`
+- 日志：`~/Library/Logs/english-os.log`
+- 服务器只监听本机（127.0.0.1），局域网里的其他设备访问不到。
+
+## 每日复习
+
+Daily Review 页面把你的错题（辨音首次答错、跟读对比标记的问题、自己记录的错误、ELSA 记录）按日历排成间隔复习：答对后 1 → 2 → 4 → 7 → 15 天再出现，答错第二天再来，每天最多 8 项。和每天课程里第 7 步的课内复习互不影响，不练新课的日子也可以做。
+
+## 自动备份
+
+在本机运行时，每次进度变化、每段新录音都会自动复制到 `~/English OS 备份/`：
+
+- `progress-latest.json`：最新的全部进度（不含 API key）
+- `daily/progress-YYYY-MM-DD.json`：每天一份快照，保留 60 天
+- `recordings/`、`refAudio/`、`images/`：录音、导入的真人音频、ELSA 截图
+
+换浏览器或清除了网站数据，在 Progress → 备份 点「从自动备份恢复」即可。想换位置，设置环境变量 `ENGLISH_OS_BACKUP_DIR`。
+
 ## 数据保存在哪里
 
 全部保存在你本机浏览器中：进度在 localStorage，录音、导入的真人音频和 ELSA 截图在 IndexedDB。不会上传到任何服务器（AI 追问和「可懂度检查」除外，它们会把文字或语音发送给相应服务）。
 
-换浏览器或清除网站数据会看不到记录。建议每天训练后在 Progress → 备份 导出一次。
+浏览器里的数据会自动备份到 `~/English OS 备份/`（见上）。也可以在 Progress → 备份 手动导出一个文件。
 
 ## 测试
 
 ```bash
 npm run typecheck
+npm run test:logic
 npx playwright install chromium   # 只在第一次需要
 npm run build && npm run test:e2e
 ```

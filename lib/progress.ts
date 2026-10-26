@@ -1,7 +1,7 @@
 "use client";
 
 import type { BlockId, DayPlan, QuizItem, StepId } from "@/content/types";
-import { allQuizItems, DAYS, TOTAL_DAYS } from "@/content/days";
+import { allQuizItems, DAYS, TOTAL_DAYS, WEEKS } from "@/content/days";
 import { SKILL_MAP } from "@/content/skills";
 import { ensureDay, uid, update, type AppState, type DayRecord, type ErrorSource } from "./store";
 
@@ -181,6 +181,11 @@ export function startNewRound(day: number) {
 export function currentDay(s: AppState): number {
   for (let i = 1; i <= TOTAL_DAYS; i++) if (!s.days[i]?.completedAt) return i;
   return TOTAL_DAYS;
+}
+
+// The week whose report to show: Week 2 once it has been started, else Week 1.
+export function activeWeek(s: AppState) {
+  return [...WEEKS].reverse().find((w) => w.week === 1 || s.days[w.firstDay]?.startedAt) ?? WEEKS[0];
 }
 
 export function isUnlocked(s: AppState, day: number) {

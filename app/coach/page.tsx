@@ -7,8 +7,9 @@ import { SLOW_RATE } from "@/lib/tts";
 import { ElsaForm, ElsaList } from "@/components/Elsa";
 import { analyzeError, analyzeSentence, drillFor, VERIFY } from "@/lib/coach";
 import { ELSA_GUIDANCE } from "@/lib/elsa";
-import { addError, currentDay } from "@/lib/progress";
+import { activeWeek, addError, currentDay } from "@/lib/progress";
 import { buildReport } from "@/lib/report";
+import { WEEKS } from "@/content/days";
 import { uid, update, useAppState } from "@/lib/store";
 import { useHydrated } from "@/lib/useHydrated";
 
@@ -190,11 +191,11 @@ function ElsaTab() {
 
 function ReviewTab({ askAi }: { askAi: (q: string) => void }) {
   const s = useAppState();
-  const r = useMemo(() => buildReport(s), [s]);
+  const r = useMemo(() => buildReport(s, activeWeek(s)), [s]);
   const active = s.reviews.filter((x) => !x.mastered).sort((a, b) => a.dueDay - b.dueDay);
   return (
     <div className="stack">
-      <div className="notice info">根据你的训练记录排序：Day 7 复测错误、每天辨音首次答错、跟读对比自评、自查和 ELSA 记录、复习未通过的次数。只使用这台设备上保存的数据。</div>
+      <div className="notice info">根据你本周（Week {r.week.week}）的训练记录排序：Day {r.week.retestDay} 复测错误、每天辨音首次答错、跟读对比自评、自查和 ELSA 记录、复习未通过的次数。只使用这台设备上保存的数据。</div>
       <div className="grid grid-2" style={{ alignItems: "start" }}>
         <div className="card">
           <h3>当前弱项</h3>
@@ -218,13 +219,16 @@ function ReviewTab({ askAi }: { askAi: (q: string) => void }) {
 }
 
 function contextSummary(s: ReturnType<typeof useAppState>): string {
-  const r = buildReport(s);
-  const lines = [
-    `已完成：${r.days.filter((d) => d.completed).map((d) => `Day ${d.day}`).join("、") || "无"}；累计 ${r.totalMinutes} 分钟。`,
-    `基线听辨正确率：Day 1 ${r.baseline.d1.n ? Math.round((r.baseline.d1.c / r.baseline.d1.n) * 100) + "%" : "无"}，Day 7 ${r.baseline.d7.n ? Math.round((r.baseline.d7.c / r.baseline.d7.n) * 100) + "%" : "无"}。`,
-    `弱项：${r.weaknesses.slice(0, 5).map((w) => `${w.label}（${w.evidence.slice(0, 2).join("；")}）`).join(" | ") || "暂无"}`,
+  const pc = (x: { n: number; c: number }) => (x.n ? Math.round((x.c / x.n) * 100) + "%" : "无");
+  const reports = WEEKS.filter((w) => w.week === 1 || s.days[w.firstDay]?.startedAt).map((w) => buildReport(s, w));
+  const lines = reports.flatMap((r) => [
+    `Week ${r.week.week}：已完成 ${r.days.filter((d) => d.completed).map((d) => `Day ${d.day}`).join("、") || "无"}；累计 ${r.totalMinutes} 分钟。`,
+    `Week ${r.week.week} 基线听辨正确率：Day ${r.week.baselineDay} ${pc(r.baseline.d1)}，Day ${r.week.retestDay} ${pc(r.baseline.d7)}。`,
+    `Week ${r.week.week} 弱项：${r.weaknesses.slice(0, 5).map((w) => `${w.label}（${w.evidence.slice(0, 2).join("；")}）`).join(" | ") || "暂无"}`,
+  ]);
+  lines.push(
     `ELSA 记录：${s.elsa.slice(-5).map((e) => `${e.word}: ${e.issue}${e.accentDifference ? "（判定为口音差异）" : ""}`).join("；") || "无"}`,
-  ];
+  );
   return lines.join("\n");
 }
 

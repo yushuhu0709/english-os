@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { BlockId, DayPlan, QuizItem, ShadowItem, StepId } from "@/content/types";
 import { BLOCK_LABEL, BLOCK_OF_STEP, STEP_LABEL, STEP_ORDER } from "@/content/types";
 import { SKILL_MAP, SKILLS, matchSkills, skillLabel } from "@/content/skills";
+import { TOTAL_DAYS, weekOf } from "@/content/days";
 import {
   addError, answerQuiz, canComplete, completeDay, dueReviews, fmtMin, heartbeat, liveBlockMs, liveRoundMs,
   liveTotalMs, pauseTimer, recordReview, requirements, REQUIRED_REPS, resolveError, reviewQuizFor, startNewRound,
@@ -288,6 +289,7 @@ export function QuizCard({ q, n, day, attempts, onAnswer }: { q: QuizItem; n?: n
       <div className="row between">
         <div className="row">
           {n ? <span className="badge">{n}</span> : null}
+          {/^(base|b2)-/.test(q.id) ? <span className="badge accent">基线</span> : null}
           <b>{q.prompt}</b>
           <span className="tiny muted">{skillLabel(q.skill)}</span>
         </div>
@@ -369,7 +371,7 @@ function RecordStep({ plan, rec }: { plan: DayPlan; rec?: DayRecord }) {
     <div className="stack">
       <p className="muted">
         先听示范 2–3 遍，再跟读，最后独立录音。录音可以录多次，Compare 一步会用最近一次录音。
-        {anyBaseline ? " 标有「可比录音」的项目会在 Day 1 和 Day 7 各录一次，用于对比。" : ""}
+        {anyBaseline ? ` 标有「可比录音」的项目会在 Day ${weekOf(plan.day).baselineDay} 和 Day ${weekOf(plan.day).retestDay} 各录一次，用于对比。` : ""}
       </p>
       {plan.shadow.map((it) => <ShadowCard key={it.id} plan={plan} item={it} round={round} takes={rec?.recordings[it.id] ?? []} />)}
     </div>
@@ -657,7 +659,8 @@ function CompletionPanel({ plan, s }: { plan: DayPlan; s: AppState }) {
           <button className="btn primary lg" disabled={!ok} onClick={() => completeDay(plan.day)}>完成 Day {plan.day}</button>
         ) : (
           <>
-            {plan.day < 7 ? <Link className="btn primary" href={`/bootcamp/${plan.day + 1}`}>进入 Day {plan.day + 1} →</Link> : <Link className="btn primary" href="/progress#report">查看 Week 1 报告 →</Link>}
+            {plan.day === weekOf(plan.day).retestDay ? <Link className="btn primary" href="/progress#report">查看 Week {weekOf(plan.day).week} 报告 →</Link> : null}
+            {plan.day < TOTAL_DAYS ? <Link className={`btn ${plan.day === weekOf(plan.day).retestDay ? "" : "primary"}`} href={`/bootcamp/${plan.day + 1}`}>进入 Day {plan.day + 1} →</Link> : null}
             <button className="btn" onClick={() => { if (confirm("开始新一轮会清空本轮的勾选状态（录音和历史会保留）。继续吗？")) startNewRound(plan.day); }}>再练一轮</button>
           </>
         )}

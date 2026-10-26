@@ -1,13 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { DAY_TITLES, getDay } from "@/content/days";
+import { DAY_TITLES, getDay, TOTAL_DAYS, WEEKS, weekOf } from "@/content/days";
 import { STEP_LABEL, STEP_ORDER } from "@/content/types";
 import { DayStrip } from "@/components/DayStrip";
 import { VoiceStatus } from "@/components/Audio";
 import { currentDay, dueReviews, fmtMin, liveRoundMs, requirements, stepStatus } from "@/lib/progress";
 import { useAppState } from "@/lib/store";
 import { useHydrated, useNow } from "@/lib/useHydrated";
+import { dailyQueue } from "@/lib/daily";
 
 export default function Dashboard() {
   const s = useAppState();
@@ -20,7 +21,9 @@ export default function Dashboard() {
   const meta = DAY_TITLES[day - 1];
   const rec = s.days[day];
   const allDone = Object.values(s.days).filter((d) => d.completedAt).length;
-  const weekDone = !!s.days[7]?.completedAt;
+  const week = weekOf(day);
+  const weekDone = !!s.days[TOTAL_DAYS]?.completedAt; // whole bootcamp finished
+  const justFinishedWeek1 = !!s.days[WEEKS[0].retestDay]?.completedAt && !s.days[WEEKS[1].firstDay]?.startedAt;
   const due = dueReviews(s, day).filter((t) => !rec?.reviewed[t.id]);
   const totalMs = Object.values(s.days).reduce((a, d) => a + d.totalMs, 0);
   const recCount = Object.values(s.days).reduce((a, d) => a + Object.values(d.recordings).reduce((x, y) => x + y.length, 0), 0);
@@ -30,10 +33,16 @@ export default function Dashboard() {
   return (
     <div>
       <div className="page-head">
-        <div className="eyebrow">English OS · Phase 1 · {new Date().toLocaleDateString("zh-CN", { month: "long", day: "numeric", weekday: "long" })}</div>
-        <h1>{weekDone ? "第一周训练已完成" : `今天：Day ${day} · ${meta.title}`}</h1>
-        <p>{weekDone ? "Week 1 Pronunciation Report 已经可以查看。第二周的内容等你提供真实反馈后再设计。" : meta.outcome}</p>
+        <div className="eyebrow">English OS · Week {week.week} · {new Date().toLocaleDateString("zh-CN", { month: "long", day: "numeric", weekday: "long" })}</div>
+        <h1>{weekDone ? "两周训练已完成" : `今天：Day ${day} · ${meta.title}`}</h1>
+        <p>{weekDone ? "Week 1 和 Week 2 的报告都可以在 Progress 查看。每日复习会继续按你的错题安排。" : meta.outcome}</p>
       </div>
+
+      {justFinishedWeek1 ? (
+        <div className="notice info" style={{ marginBottom: 12 }}>
+          第一周完成了。先花几分钟看看 <Link href="/progress#report">Week 1 报告</Link>，再开始第二周：Day 8 会先做一次语流基线测试。
+        </div>
+      ) : null}
 
       <VoiceStatus />
 
@@ -45,7 +54,8 @@ export default function Dashboard() {
           </div>
           {weekDone ? (
             <div className="stack" style={{ marginTop: 12 }}>
-              <Link href="/progress#report" className="btn primary lg">查看 Week 1 报告</Link>
+              <Link href="/progress#report" className="btn primary lg">查看 Week 2 报告</Link>
+              <Link href="/review" className="btn">做今天的每日复习</Link>
               <Link href="/bootcamp" className="btn">回看任意一天或再练一轮</Link>
             </div>
           ) : plan ? (
@@ -78,14 +88,15 @@ export default function Dashboard() {
         <div className="stack">
           <section className="card">
             <div className="grid grid-2">
-              <div className="stat"><b>{allDone}/7</b><span>完成天数</span></div>
+              <div className="stat"><b>{allDone}/{TOTAL_DAYS}</b><span>完成天数</span></div>
               <div className="stat"><b>{Math.round(totalMs / 60000)}</b><span>累计训练分钟</span></div>
               <div className="stat"><b>{recCount}</b><span>发音录音</span></div>
               <div className="stat"><b>{openErrors}</b><span>未解决的错误</span></div>
             </div>
           </section>
+          <DailyCard s={s} />
           <section className="card">
-            <div className="row between"><h3 style={{ margin: 0 }}>今天到期的复习</h3><span className="badge">{due.length}</span></div>
+            <div className="row between"><h3 style={{ margin: 0 }}>课内复习（第 7 步）</h3><span className="badge">{due.length}</span></div>
             {due.length ? (
               <ul className="small" style={{ marginTop: 8 }}>{due.map((t) => <li key={t.id}>{t.label}</li>)}</ul>
             ) : <p className="small muted" style={{ marginTop: 8, marginBottom: 0 }}>没有到期的复习。复习会出现在每天训练的第 7 步。</p>}
@@ -101,8 +112,25 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <h3 style={{ marginTop: 32 }}>本周进度</h3>
-      <DayStrip s={s} />
+      <h3 style={{ marginTop: 32 }}>本周进度 · Week {week.week} {week.titleEn}</h3>
+      <DayStrip s={s} week={week} />
     </div>
+  );
+}
+
+function DailyCard({ s }: { s: ReturnType<typeof useAppState> }) {
+  const q = dailyQueue(s);
+  const left = q.items.filter((i) => !q.doneToday.includes(i.skill)).length;
+  return (
+    <section className="card" style={{ borderColor: left ? "var(--accent)" : undefined }}>
+      <div className="row between">
+        <h3 style={{ margin: 0 }}>每日复习</h3>
+        <span className={`badge ${left ? "accent" : "ok"}`}>{left ? `今天 ${left} 项` : q.items.length ? "今天已完成" : "暂无"}</span>
+      </div>
+      <p className="small muted" style={{ margin: "8px 0" }}>
+        {left ? `按你的错题排好的 5–10 分钟复习。${q.streak ? `已连续 ${q.streak} 天。` : ""}` : q.items.length ? `已连续 ${q.streak} 天，明天再来。` : "答错的题和记录的问题会自动排进来。"}
+      </p>
+      {left ? <Link href="/review" className="btn primary" style={{ width: "100%" }}>开始每日复习 →</Link> : <Link href="/review" className="btn sm">查看复习安排</Link>}
+    </section>
   );
 }

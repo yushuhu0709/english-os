@@ -111,6 +111,23 @@ export interface Settings {
   previewLocked: boolean;
 }
 
+// Calendar-based daily review (lib/daily.ts), separate from the in-lesson
+// review that is scheduled by bootcamp day.
+export interface DailyItem {
+  skill: string;
+  addedAt: string; // YYYY-MM-DD
+  due: string; // YYYY-MM-DD
+  stage: number; // index into DAILY_INTERVALS
+  evidence: number; // errors + failed reviews seen for this skill when last synced
+  history: { date: string; correct: boolean }[];
+  mastered?: boolean;
+}
+
+export interface DailyState {
+  items: Record<string, DailyItem>;
+  log: Record<string, string[]>; // date -> skills reviewed that day
+}
+
 export interface AppState {
   version: 1;
   createdAt: string;
@@ -121,6 +138,7 @@ export interface AppState {
   coach: CoachNote[];
   settings: Settings;
   report?: { generatedAt: string; aiSummary?: string; aiModel?: string };
+  daily?: DailyState;
 }
 
 export function emptyDay(day: number): DayRecord {

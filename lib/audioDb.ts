@@ -73,17 +73,20 @@ function tx<T>(store: string, mode: IDBTransactionMode, fn: (s: IDBObjectStore) 
 
 export const normKey = (text: string) => text.trim().toLowerCase().replace(/\s+/g, " ");
 
-export const saveRecording = (row: RecordingRow) => tx("recordings", "readwrite", (s) => s.put(row));
+// Lets the automatic backup (lib/backup.ts) know a new file is waiting.
+const announce = <T>(p: Promise<T>) => p.then((v) => { window.dispatchEvent(new Event("english-os:file-saved")); return v; });
+
+export const saveRecording = (row: RecordingRow) => announce(tx("recordings", "readwrite", (s) => s.put(row)));
 export const getRecording = (id: string) => tx<RecordingRow | undefined>("recordings", "readonly", (s) => s.get(id));
 export const deleteRecording = (id: string) => tx("recordings", "readwrite", (s) => s.delete(id));
 export const allRecordings = () => tx<RecordingRow[]>("recordings", "readonly", (s) => s.getAll());
 
-export const saveRefAudio = (row: RefAudioRow) => tx("refAudio", "readwrite", (s) => s.put(row));
+export const saveRefAudio = (row: RefAudioRow) => announce(tx("refAudio", "readwrite", (s) => s.put(row)));
 export const getRefAudio = (text: string) => tx<RefAudioRow | undefined>("refAudio", "readonly", (s) => s.get(normKey(text)));
 export const deleteRefAudio = (text: string) => tx("refAudio", "readwrite", (s) => s.delete(normKey(text)));
 export const allRefAudio = () => tx<RefAudioRow[]>("refAudio", "readonly", (s) => s.getAll());
 
-export const saveImage = (row: ImageRow) => tx("images", "readwrite", (s) => s.put(row));
+export const saveImage = (row: ImageRow) => announce(tx("images", "readwrite", (s) => s.put(row)));
 export const getImage = (id: string) => tx<ImageRow | undefined>("images", "readonly", (s) => s.get(id));
 export const deleteImage = (id: string) => tx("images", "readwrite", (s) => s.delete(id));
 export const allImages = () => tx<ImageRow[]>("images", "readonly", (s) => s.getAll());
