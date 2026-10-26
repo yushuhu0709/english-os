@@ -4,6 +4,8 @@ export default defineConfig({
   testDir: "./tests",
   testMatch: /.*\.spec\.ts/,
   timeout: 180_000,
+  // every spec auto-backs up to the same folder, and backup.spec restores from it
+  workers: 1,
   expect: { timeout: 8000 },
   use: {
     baseURL: "http://localhost:3123",

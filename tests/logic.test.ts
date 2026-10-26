@@ -8,6 +8,7 @@ import { WEEKS, weekOf } from "../content/days";
 import { addDays, applyDailyResult, dailyQueue, streak, syncDaily, DAILY_INTERVALS } from "../lib/daily";
 import { fileBase, isLocalRequest } from "../lib/backupServer";
 import { initialState } from "../lib/store";
+import { courseTexts, matchFile, scriptCsv, textKey } from "../lib/audioLibrary";
 import { planFor, shortPlan, SHORT, dueReviews } from "../lib/progress";
 import { checkAccentDifference } from "../lib/elsa";
 import { analyzeSentence } from "../lib/coach";
@@ -122,6 +123,30 @@ for (const d of DAYS) {
   const st = initialState();
   for (let i = 0; i < 10; i++) st.reviews.push({ id: `r${i}`, skill: "θ-s", createdDay: 1, dueDay: 2, stage: 0, history: [], mastered: false } as never);
   ok(dueReviews(st, 2).length === 6 && dueReviews(st, 2, SHORT.reviews).length === 3, "short lessons cap reviews at 3");
+}
+
+// audio library
+{
+  const texts = courseTexts();
+  const keys = new Set(texts.map((t) => t.key));
+  ok(keys.size === texts.length, "audio library: one row per distinct text");
+  for (const d of DAYS) {
+    for (const x of [...d.listen, ...d.produce, ...d.shadow]) ok(keys.has(textKey(x.text)), `audio library has ${x.id}`);
+    for (const q of d.identify) if (q.kind === "hear" && q.say) ok(keys.has(textKey(q.say)), `audio library has ${q.id}`);
+  }
+  const allIds = texts.flatMap((t) => t.ids);
+  ok(new Set(allIds).size === allIds.length, "audio library ids are unique");
+  const l1 = texts.find((t) => t.id === "d2-l1")!;
+  ok(matchFile("d2-l1.m4a", texts) === l1, "match by id");
+  ok(matchFile("07_D2-L1 sheep ship.WAV", texts) === l1, "match by id inside a longer name");
+  ok(matchFile(`${l1.text.toUpperCase()}.mp3`, texts) === l1, "match by sentence");
+  ok(matchFile("holiday.mp3", texts) === null, "no false match");
+  const ten = texts.find((t) => t.ids.some((id) => /-l10$/.test(id)));
+  if (ten) { const one = ten.ids.find((id) => /-l10$/.test(id))!; ok(matchFile(`${one}.mp3`, texts) === ten, "longest id wins"); }
+  const shared = texts.find((t) => t.ids.length > 1)!;
+  ok(matchFile(`${shared.ids[1]}.mp3`, texts) === shared, "any id of a shared text matches");
+  const csv = scriptCsv(texts);
+  ok(csv.split("\n").length === texts.length + 2 && csv.includes('"sheep ship leave live"'), "recording script lists every text");
 }
 
 console.log(`logic tests passed: ${n} checks`);
