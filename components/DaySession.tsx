@@ -8,8 +8,8 @@ import { SKILL_MAP, SKILLS, matchSkills, skillLabel } from "@/content/skills";
 import { TOTAL_DAYS, weekOf } from "@/content/days";
 import {
   addError, answerQuiz, canComplete, completeDay, dueReviews, fmtMin, heartbeat, liveBlockMs, liveRoundMs,
-  liveTotalMs, pauseTimer, recordReview, requirements, REQUIRED_REPS, resolveError, reviewQuizFor, startNewRound,
-  startTimer, stepStatus, switchBlock, upcomingReviews,
+  liveTotalMs, pauseTimer, planFor, recordReview, requirements, REQUIRED_REPS, resolveError, reviewQuizFor, setShort,
+  startNewRound, startTimer, stepStatus, switchBlock, upcomingReviews,
 } from "@/lib/progress";
 import { ensureDay, update, useAppState, type AppState, type DayRecord } from "@/lib/store";
 import { useNow } from "@/lib/useHydrated";
@@ -23,9 +23,10 @@ import { ElsaForm } from "./Elsa";
 
 const STEP_KEY = (day: number) => `english-os:step:${day}`;
 
-export function DaySession({ plan }: { plan: DayPlan }) {
+export function DaySession({ plan: full }: { plan: DayPlan }) {
   const s = useAppState();
-  const rec = s.days[plan.day];
+  const rec = s.days[full.day];
+  const plan = useMemo(() => planFor(full, rec), [full, rec?.short]); // eslint-disable-line react-hooks/exhaustive-deps
   const [step, setStep] = useState<StepId>("learn");
 
   useEffect(() => {
@@ -126,6 +127,12 @@ function SessionBar({ plan, rec, step }: { plan: DayPlan; rec?: DayRecord; step:
           </div>
         </div>
         <div className="row">
+          {!rec?.completedAt ? (
+            <div className="row" style={{ gap: 4 }} role="group" aria-label="课程长度">
+              <button className={`btn sm ${rec?.short ? "" : "dark"}`} aria-pressed={!rec?.short} onClick={() => setShort(plan.day, false)}>完整版</button>
+              <button className={`btn sm ${rec?.short ? "dark" : ""}`} aria-pressed={!!rec?.short} onClick={() => setShort(plan.day, true)}>短课 · 约 30 分钟</button>
+            </div>
+          ) : rec.short ? <span className="badge accent">短课</span> : null}
           {running ? (
             <button className="btn" onClick={() => pauseTimer(plan.day)}>❚❚ 暂停</button>
           ) : (
@@ -494,7 +501,7 @@ function DurationHint({ id }: { id: string }) {
 
 // ── Repeat / Review ──────────────────────────────────────────────
 function RepeatStep({ plan, rec, s }: { plan: DayPlan; rec?: DayRecord; s: AppState }) {
-  const due = dueReviews(s, plan.day);
+  const due = dueReviews(s, plan.day, plan.reviewLimit);
   const todayErrors = s.errors.filter((e) => e.day === plan.day);
   const upcoming = upcomingReviews(s, plan.day);
   return (

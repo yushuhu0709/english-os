@@ -4,10 +4,11 @@ import { addMinutes } from "./helpers";
 const step = (page: Page, n: number) => page.locator(".step-pill").nth(n).click();
 
 // Works through every step of a day through the real UI.
-export async function runDay(page: Page, day: number, opts: { wrongEvery?: number; issuesOnCompare?: boolean; shot?: string } = {}) {
+export async function runDay(page: Page, day: number, opts: { wrongEvery?: number; issuesOnCompare?: boolean; shot?: string; short?: boolean } = {}) {
   await page.goto(`/bootcamp/${day}`);
   const open = page.getByRole("button", { name: "仍然打开" });
   if (await open.isVisible().catch(() => false)) await open.click();
+  if (opts.short) await page.getByRole("button", { name: /短课/ }).click();
   await page.getByRole("button", { name: /开始训练|继续训练/ }).click();
   await expect(page.getByRole("button", { name: /暂停/ }).first()).toBeVisible();
 

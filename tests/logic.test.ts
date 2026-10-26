@@ -8,6 +8,7 @@ import { WEEKS, weekOf } from "../content/days";
 import { addDays, applyDailyResult, dailyQueue, streak, syncDaily, DAILY_INTERVALS } from "../lib/daily";
 import { fileBase, isLocalRequest } from "../lib/backupServer";
 import { initialState } from "../lib/store";
+import { planFor, shortPlan, SHORT, dueReviews } from "../lib/progress";
 import { checkAccentDifference } from "../lib/elsa";
 import { analyzeSentence } from "../lib/coach";
 
@@ -102,5 +103,25 @@ ok(toks.find((t) => t.clean === "for")?.weak === "fə", "for weak form");
 ok(toks.find((t) => t.clean === "them")?.pauseAfter, "pause after comma");
 ok(analyzeSentence("far away").find((t) => t.clean === "far")?.linkNext === "linking-r", "linking r detected");
 ok(analyzeSentence("turn it off").find((t) => t.clean === "turn")?.linkNext === "consonant-vowel", "C+V linking detected");
+
+// short lessons
+for (const d of DAYS) {
+  const q = shortPlan(d);
+  ok(Object.values(q.blocks).reduce((a, b) => a + b, 0) === 30, `Day ${d.day} short blocks add up to 30`);
+  ok(q.learn.length === Math.min(SHORT.learn, d.learn.length) && q.listen.length <= SHORT.listen && q.produce.length <= SHORT.produce, `Day ${d.day} short trims content`);
+  ok(q.learn.every((x, i, a) => i === 0 || d.learn.indexOf(x) > d.learn.indexOf(a[i - 1])), `Day ${d.day} short keeps learn order`);
+  const baseQ = d.identify.filter((x) => /^(base|b2)-/.test(x.id));
+  if (baseQ.length) ok(q.identify.length === baseQ.length, `Day ${d.day} short keeps every baseline question`);
+  const baseR = d.shadow.filter((x) => x.baseline);
+  if (baseR.length) ok(q.shadow.length === baseR.length, `Day ${d.day} short keeps every baseline recording`);
+  ok(q.shadow.length > 0 && q.identify.length > 0 && q.learn.length > 0, `Day ${d.day} short is not empty`);
+  ok(JSON.stringify(shortPlan(q)) === JSON.stringify(q), `Day ${d.day} shortPlan is idempotent`);
+  ok(planFor(d, undefined) === d, "no record → full plan");
+}
+{
+  const st = initialState();
+  for (let i = 0; i < 10; i++) st.reviews.push({ id: `r${i}`, skill: "θ-s", createdDay: 1, dueDay: 2, stage: 0, history: [], mastered: false } as never);
+  ok(dueReviews(st, 2).length === 6 && dueReviews(st, 2, SHORT.reviews).length === 3, "short lessons cap reviews at 3");
+}
 
 console.log(`logic tests passed: ${n} checks`);
