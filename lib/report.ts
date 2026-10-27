@@ -1,8 +1,10 @@
 import { DAY_TITLES, DAYS, WEEKS, type WeekPlan } from "@/content/days";
 import { SKILL_MAP, skillLabel } from "@/content/skills";
 import type { AppState } from "./store";
+import { MONTH_RECORD } from "@/content/days/day28";
 
-// Weekly report (Week 1 Pronunciation Report, Week 2 Connected Speech Report).
+// Weekly report (Week 1 Pronunciation Report … Week 4 Speaking Report).
+// The last week also compares the Day 1 passage with the same passage read on Day 28.
 // Each week compares its baseline day with its re-test day on the same items.
 // Built only from what was recorded in this browser:
 // timer data, first-attempt quiz answers, recordings, self-ratings, errors, ELSA notes
@@ -37,6 +39,8 @@ export interface ItemChange {
   d7: boolean | null;
 }
 
+export interface RecordingPair { id: string; text: string; d1: string | null; d7: string | null; d1Rating: number | null; d7Rating: number | null }
+
 export interface Weakness {
   skill: string;
   label: string;
@@ -53,7 +57,9 @@ export interface Report {
   days: DayRow[];
   totalMinutes: number;
   baseline: { d1: { n: number; c: number }; d7: { n: number; c: number }; bySkill: BaselineSkillRow[]; items: ItemChange[] };
-  recordingPairs: { id: string; text: string; d1: string | null; d7: string | null; d1Rating: number | null; d7Rating: number | null }[];
+  recordingPairs: RecordingPair[];
+  // last week only: Day 1 vs final day on the Day 1 passage, plus the whole course's totals
+  month: { firstDay: number; lastDay: number; pairs: RecordingPair[]; completedDays: number; totalDays: number; totalMinutes: number } | null;
   practiced: { skill: string; label: string; action: string; reps: number; days: number[] }[];
   weaknesses: Weakness[];
   priorities: Weakness[];
@@ -102,14 +108,26 @@ export function buildReport(s: AppState, week: WeekPlan = WEEKS[0]): Report {
   const bySkill = [...bySkillMap.values()];
   const tot = (k: "d1" | "d7") => bySkill.reduce((a, r) => ({ n: a.n + r[k].n, c: a.c + r[k].c }), { n: 0, c: 0 });
 
-  const recordingPairs = week.baselineRecord.map((r) => ({
+  const pair = (a: typeof d1, b: typeof d1) => (r: { id: string; text: string }): RecordingPair => ({
     id: r.id,
     text: r.text,
-    d1: d1?.recordings[r.id]?.slice(-1)[0] ?? null,
-    d7: d7?.recordings[r.id]?.slice(-1)[0] ?? null,
-    d1Rating: d1?.compared[r.id]?.rating ?? null,
-    d7Rating: d7?.compared[r.id]?.rating ?? null,
-  }));
+    d1: a?.recordings[r.id]?.slice(-1)[0] ?? null,
+    d7: b?.recordings[r.id]?.slice(-1)[0] ?? null,
+    d1Rating: a?.compared[r.id]?.rating ?? null,
+    d7Rating: b?.compared[r.id]?.rating ?? null,
+  });
+  const recordingPairs = week.baselineRecord.map(pair(d1, d7));
+  const last = WEEKS[WEEKS.length - 1];
+  const month = week.week === last.week
+    ? {
+        firstDay: 1,
+        lastDay: last.lastDay,
+        pairs: MONTH_RECORD.map(pair(s.days[1], s.days[last.lastDay])),
+        completedDays: DAYS.filter((p) => s.days[p.day]?.completedAt).length,
+        totalDays: DAYS.length,
+        totalMinutes: DAYS.reduce((a, p) => a + Math.round((s.days[p.day]?.totalMs ?? 0) / 60000), 0),
+      }
+    : null;
 
   // ── practised articulatory actions (from produce reps on days actually trained) ──
   const practicedMap = new Map<string, { reps: number; days: Set<number> }>();
@@ -178,6 +196,7 @@ export function buildReport(s: AppState, week: WeekPlan = WEEKS[0]): Report {
     totalMinutes: days.reduce((a, d) => a + d.minutes, 0),
     baseline: { d1: tot("d1"), d7: tot("d7"), bySkill, items },
     recordingPairs,
+    month,
     practiced,
     weaknesses,
     priorities,
@@ -199,6 +218,12 @@ export function reportMarkdown(r: Report): string {
   L.push(`## 2. Day ${b} 与 Day ${t} 可比录音`, ``, `| 材料 | Day ${b} | Day ${t} | 自评 D${b}→D${t} |`, `|---|---|---|---|`);
   for (const p of r.recordingPairs) L.push(`| ${p.text} | ${p.d1 ? "有录音" : "缺"} | ${p.d7 ? "有录音" : "缺"} | ${p.d1Rating ?? "—"} → ${p.d7Rating ?? "—"} |`);
   L.push(``, `录音保存在本机浏览器中，请在 English OS 的 Progress 页面回放对比。`, ``);
+  if (r.month) {
+    const m = r.month;
+    L.push(`## 一个月对比：Day ${m.firstDay} 与 Day ${m.lastDay}`, ``, `整个课程完成 ${m.completedDays}/${m.totalDays} 天，累计 ${m.totalMinutes} 分钟。`, ``, `| Day ${m.firstDay} 短文 | Day ${m.firstDay} | Day ${m.lastDay} | 自评 |`, `|---|---|---|---|`);
+    for (const p of m.pairs) L.push(`| ${p.text} | ${p.d1 ? "有录音" : "缺"} | ${p.d7 ? "有录音" : "缺"} | ${p.d1Rating ?? "—"} → ${p.d7Rating ?? "—"} |`);
+    L.push(``);
+  }
   L.push(`## 3. 主要辨音错误和变化`, ``, `基线听辨总正确率：Day ${b} ${pct(r.baseline.d1)} → Day ${t} ${pct(r.baseline.d7)}`, ``, `| 项目 | Day ${b} | Day ${t} |`, `|---|---|---|`);
   for (const b of r.baseline.bySkill) L.push(`| ${b.label} | ${pct(b.d1)} | ${pct(b.d7)} |`);
   const improved = r.baseline.items.filter((i) => i.d1 === false && i.d7 === true).map((i) => i.word);

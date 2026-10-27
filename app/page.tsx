@@ -25,7 +25,9 @@ export default function Dashboard() {
   const allDone = Object.values(s.days).filter((d) => d.completedAt).length;
   const week = weekOf(day);
   const weekDone = !!s.days[TOTAL_DAYS]?.completedAt; // whole bootcamp finished
-  const justFinishedWeek1 = !!s.days[WEEKS[0].retestDay]?.completedAt && !s.days[WEEKS[1].firstDay]?.startedAt;
+  // a week was just finished and the next one has not been started yet
+  const justFinished = WEEKS.slice(0, -1).find((w, i) => !!s.days[w.retestDay]?.completedAt && !s.days[WEEKS[i + 1].firstDay]?.startedAt);
+  const nextWeek = justFinished && WEEKS[justFinished.week];
   const due = dueReviews(s, day, plan?.reviewLimit).filter((t) => !rec?.reviewed[t.id]);
   const totalMs = Object.values(s.days).reduce((a, d) => a + d.totalMs, 0);
   const recCount = Object.values(s.days).reduce((a, d) => a + Object.values(d.recordings).reduce((x, y) => x + y.length, 0), 0);
@@ -36,13 +38,13 @@ export default function Dashboard() {
     <div>
       <div className="page-head">
         <div className="eyebrow">English OS · Week {week.week} · {new Date().toLocaleDateString("zh-CN", { month: "long", day: "numeric", weekday: "long" })}</div>
-        <h1>{weekDone ? "两周训练已完成" : `今天：Day ${day} · ${meta.title}`}</h1>
-        <p>{weekDone ? "Week 1 和 Week 2 的报告都可以在 Progress 查看。每日复习会继续按你的错题安排。" : meta.outcome}</p>
+        <h1>{weekDone ? "一个月训练已完成" : `今天：Day ${day} · ${meta.title}`}</h1>
+        <p>{weekDone ? "四周的报告和 Day 1 与 Day 28 的录音对比都在 Progress。每日复习会继续按你的错题安排。" : meta.outcome}</p>
       </div>
 
-      {justFinishedWeek1 ? (
+      {justFinished && nextWeek ? (
         <div className="notice info" style={{ marginBottom: 12 }}>
-          第一周完成了。先花几分钟看看 <Link href="/progress#report">Week 1 报告</Link>，再开始第二周：Day 8 会先做一次语流基线测试。
+          第{["一", "二", "三", "四"][justFinished.week - 1]}周完成了。先花几分钟看看 <Link href="/progress#report">Week {justFinished.week} 报告</Link>，再开始{nextWeek.title.split("：")[0]}：Day {nextWeek.firstDay} 会先做一次基线测试。
         </div>
       ) : null}
 
@@ -57,7 +59,7 @@ export default function Dashboard() {
           </div>
           {weekDone ? (
             <div className="stack" style={{ marginTop: 12 }}>
-              <Link href="/progress#report" className="btn primary lg">查看 Week 2 报告</Link>
+              <Link href="/progress#report" className="btn primary lg">查看一个月报告</Link>
               <Link href="/review" className="btn">做今天的每日复习</Link>
               <Link href="/bootcamp" className="btn">回看任意一天或再练一轮</Link>
             </div>

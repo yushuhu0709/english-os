@@ -297,7 +297,7 @@ export function QuizCard({ q, n, day, attempts, onAnswer }: { q: QuizItem; n?: n
       <div className="row between">
         <div className="row">
           {n ? <span className="badge">{n}</span> : null}
-          {/^(base|b2)-/.test(q.id) ? <span className="badge accent">基线</span> : null}
+          {/^(base|b\d)-/.test(q.id) ? <span className="badge accent">基线</span> : null}
           <b>{q.prompt}</b>
           <span className="tiny muted">{skillLabel(q.skill)}</span>
         </div>
