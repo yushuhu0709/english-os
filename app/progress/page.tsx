@@ -6,13 +6,15 @@ import { TakeChip } from "@/components/Recorder";
 import { PlayButton } from "@/components/Audio";
 import { allImages, allRecordings, allRefAudio, blobToDataUrl, dataUrlToBlob, saveImage, saveRecording, saveRefAudio } from "@/lib/audioDb";
 import { resolveError } from "@/lib/progress";
-import { buildReport, reportMarkdown, type Report } from "@/lib/report";
+import { buildReport, reportMarkdown, type RecordingPair, type Report } from "@/lib/report";
 import { WEEKS } from "@/content/days";
 import { activeWeek } from "@/lib/progress";
 import { replaceState, useAppState, type AppState } from "@/lib/store";
 import { useHydrated } from "@/lib/useHydrated";
 import { practiceStreak, recentDays } from "@/lib/practice";
 import { backupNow, restoreFromBackup, useBackupStatus } from "@/lib/backup";
+
+const REPORT_NAMES: Record<number, string> = { 1: "第一周发音报告", 2: "第二周语流报告", 3: "第三周日常对话报告", 4: "第四周与一个月报告" };
 
 const pct = (x: { n: number; c: number }) => (x.n ? `${Math.round((x.c / x.n) * 100)}%` : "—");
 
@@ -152,21 +154,34 @@ function Compare({ r }: { r: Report }) {
         </div>
         <div>
           <h3>可比录音</h3>
-          <div className="stack" style={{ gap: 8 }}>
-            {r.recordingPairs.map((p) => (
-              <div key={p.id} className="card flat" style={{ padding: 12 }}>
-                <div className="small" style={{ marginBottom: 6 }}>{p.text}</div>
-                <div className="row">
-                  <PlayButton text={p.text} label="示范" />
-                  {p.d1 ? <TakeChip id={p.d1} label={`Day ${r.week.baselineDay}${p.d1Rating ? ` · ${p.d1Rating}/5` : ""}`} /> : <span className="badge">Day {r.week.baselineDay} 无录音</span>}
-                  {p.d7 ? <TakeChip id={p.d7} label={`Day ${r.week.retestDay}${p.d7Rating ? ` · ${p.d7Rating}/5` : ""}`} /> : <span className="badge">Day {r.week.retestDay} 待录</span>}
-                </div>
-              </div>
-            ))}
-          </div>
+          <Pairs pairs={r.recordingPairs} a={r.week.baselineDay} b={r.week.retestDay} />
         </div>
       </div>
+      {r.month ? (
+        <div data-testid="month-compare" style={{ marginTop: 18 }}>
+          <h3>一个月对比：Day {r.month.firstDay} 与 Day {r.month.lastDay} 的同一段短文</h3>
+          <p className="small muted">整个课程完成 {r.month.completedDays}/{r.month.totalDays} 天，累计 {r.month.totalMinutes} 分钟。先听 Day {r.month.firstDay}，再听 Day {r.month.lastDay}：只听元音、词尾、停顿和重音，不用管内容。</p>
+          <Pairs pairs={r.month.pairs} a={r.month.firstDay} b={r.month.lastDay} />
+        </div>
+      ) : null}
     </section>
+  );
+}
+
+function Pairs({ pairs, a, b }: { pairs: RecordingPair[]; a: number; b: number }) {
+  return (
+    <div className="stack" style={{ gap: 8 }}>
+      {pairs.map((p) => (
+        <div key={p.id} className="card flat" style={{ padding: 12 }}>
+          <div className="small" style={{ marginBottom: 6 }}>{p.text}</div>
+          <div className="row">
+            <PlayButton text={p.text} label="示范" />
+            {p.d1 ? <TakeChip id={p.d1} label={`Day ${a}${p.d1Rating ? ` · ${p.d1Rating}/5` : ""}`} /> : <span className="badge">Day {a} 无录音</span>}
+            {p.d7 ? <TakeChip id={p.d7} label={`Day ${b}${p.d7Rating ? ` · ${p.d7Rating}/5` : ""}`} /> : <span className="badge">Day {b} 待录</span>}
+          </div>
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -216,7 +231,7 @@ function Report({ r }: { r: Report }) {
       <div className="row between">
         <div>
           <div className="eyebrow">{r.week.reportTitle}</div>
-          <h2 style={{ margin: 0 }}>{r.week.week === 1 ? "第一周发音报告" : "第二周语流报告"}{r.ready ? "" : `（完成 Day ${r.week.retestDay} 后生成）`}</h2>
+          <h2 style={{ margin: 0 }}>{REPORT_NAMES[r.week.week] ?? r.week.reportTitle}{r.ready ? "" : `（完成 Day ${r.week.retestDay} 后生成）`}</h2>
         </div>
         <div className="row no-print">
           <button className="btn sm" onClick={download}>下载 Markdown</button>
@@ -234,6 +249,10 @@ function Report({ r }: { r: Report }) {
 
       <h3>2. Day {r.week.baselineDay} 和 Day {r.week.retestDay} 的可比录音</h3>
       <p className="small">{r.recordingPairs.filter((p) => p.d1 && p.d7).length}/{r.recordingPairs.length} 组材料两天都有录音，可在上方「Day {r.week.baselineDay} 与 Day {r.week.retestDay} 对比」中逐段回放。自评分数：{r.recordingPairs.filter((p) => p.d1Rating && p.d7Rating).map((p) => `${p.d1Rating}→${p.d7Rating}`).join("，") || "—"}。</p>
+
+      {r.month ? (
+        <p className="small">一个月对比：Day 1 短文 {r.month.pairs.filter((p) => p.d1 && p.d7).length}/{r.month.pairs.length} 句两天都有录音，可在上方逐句回放。</p>
+      ) : null}
 
       <h3>3. 主要辨音错误和变化</h3>
       <p className="small">基线听辨正确率：Day {r.week.baselineDay} {pct(r.baseline.d1)} → Day {r.week.retestDay} {pct(r.baseline.d7)}。</p>
@@ -253,11 +272,11 @@ function Report({ r }: { r: Report }) {
         <ul className="small">{r.weaknesses.slice(0, 8).map((w) => <li key={w.skill}><b>{w.label}</b>：{w.evidence.slice(0, 3).join("；")}</li>)}</ul>
       ) : <p className="small muted">没有记录到明显弱项。</p>}
 
-      <h3>6. {r.week.week === 1 ? "第二周要特别留意的三个项目" : "接下来的三个优先项目"}</h3>
+      <h3>6. {r.week.week < WEEKS.length ? `第${["一", "二", "三", "四"][r.week.week]}周要特别留意的三个项目` : "接下来的三个优先项目"}</h3>
       {r.priorities.length ? (
         <ol className="small">{r.priorities.map((w) => <li key={w.skill}><b>{w.label}</b>。依据：{w.evidence[0]}。练习方向：{w.action}</li>)}</ol>
       ) : <p className="small muted">数据不足，暂无建议。</p>}
-      <p className="small muted">{r.week.week === 1 ? "这些音会继续出现在每日复习里。第二周练语流时，把它们放进句子里也要留意。" : "这些项目会继续出现在每日复习里。下一步练什么，根据这份报告和你的感受一起决定。"}</p>
+      <p className="small muted">{r.week.week < WEEKS.length ? "这些项目会继续出现在每日复习里，下一周练新内容时也要留意。" : "这些项目会继续出现在每日复习里。下一步练什么，根据这份报告和你的感受一起决定。"}</p>
 
       <div className="notice info small" style={{ marginTop: 12 }}>
         <b>数据说明：</b>

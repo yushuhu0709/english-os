@@ -14,7 +14,7 @@ export default function BootcampPage() {
       <div className="page-head">
         <div className="eyebrow">Modern Standard Southern British English</div>
         <h1>Bootcamp</h1>
-        <p>两周，每天 60–90 分钟，固定四段：理解、听辨与发音、跟读录音、复习。第一周练单个的音，第二周练语流。每周第一天做基线测试，最后一天用同一套材料复测，用来比较这一周的变化。</p>
+        <p>四周，每天 60–90 分钟（默认短课 15–30 分钟），固定四段：理解、听辨与发音、跟读录音、复习。第一周练单个的音，第二周练语流，第三周练日常对话，第四周从跟读走向自己说。每周第一天做基线测试，最后一天用同一套材料复测；Day 28 再读一遍 Day 1 的短文，做一个月对比。</p>
         <div className="row small" style={{ marginTop: 10 }}>
           {STEP_ORDER.map((k, i) => (
             <span key={k} className="badge">{i + 1}. {STEP_LABEL[k].en} · {STEP_LABEL[k].zh}</span>

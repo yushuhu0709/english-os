@@ -17,12 +17,12 @@ import { analyzeSentence } from "../lib/coach";
 let n = 0;
 const ok = (cond: unknown, msg: string) => { assert.ok(cond, msg); n++; };
 
-assert.equal(DAYS.length, 14);
+assert.equal(DAYS.length, 28);
 DAYS.forEach((d, i) => assert.equal(d.day, i + 1, `DAYS[${i}] is Day ${d.day}`));
 // ids are unique across the whole course, except the baseline items that are reused on purpose
 const seenIds = new Map<string, number>();
 for (const d of DAYS) for (const x of [...d.learn, ...d.listen, ...d.identify, ...d.produce, ...d.shadow]) {
-  if (/^(base|b2)-/.test(x.id)) continue;
+  if (/^(base|b\d)-/.test(x.id)) continue;
   ok(!seenIds.has(x.id), `id ${x.id} on Day ${d.day} already used on Day ${seenIds.get(x.id)}`);
   seenIds.set(x.id, d.day);
 }
@@ -51,7 +51,16 @@ for (const r of BASELINE_RECORD) { ok(d1.shadow.some((x) => x.id === r.id), `bas
 const d8 = DAYS[7], d14 = DAYS[13];
 for (const q of BASELINE2_QUIZ) { ok(d8.identify.some((x) => x.id === q.id), `w2 baseline ${q.id} missing on Day 8`); ok(d14.identify.some((x) => x.id === q.id), `w2 baseline ${q.id} missing on Day 14`); }
 for (const r of BASELINE2_RECORD) { ok(d8.shadow.some((x) => x.id === r.id), `w2 baseline rec ${r.id} missing on Day 8`); ok(d14.shadow.some((x) => x.id === r.id), `w2 baseline rec ${r.id} missing on Day 14`); }
-ok(weekOf(1).week === 1 && weekOf(7).week === 1 && weekOf(8).week === 2 && weekOf(14).week === 2, "weekOf");
+// every week's baseline and re-test day share that week's comparable set
+for (const w of WEEKS) {
+  const b = DAYS[w.baselineDay - 1], r = DAYS[w.retestDay - 1];
+  for (const q of w.baselineQuiz) ok(b.identify.some((x) => x.id === q.id) && r.identify.some((x) => x.id === q.id), `week ${w.week} baseline ${q.id} missing on Day ${b.day} or ${r.day}`);
+  for (const x of w.baselineRecord) ok(x.baseline && b.shadow.some((y) => y.id === x.id) && r.shadow.some((y) => y.id === x.id), `week ${w.week} recording ${x.id} missing on Day ${b.day} or ${r.day}`);
+}
+ok(WEEKS.length === 4 && WEEKS.at(-1)!.lastDay === DAYS.length, "four weeks cover the course");
+// the month report compares the Day 1 passage with Day 28
+for (const id of ["base-p1", "base-p2", "base-p3", "base-p4"]) ok(DAYS[0].shadow.some((x) => x.id === id) && DAYS[27].shadow.some((x) => x.id === id), `month comparison ${id} on Day 1 and Day 28`);
+ok(weekOf(1).week === 1 && weekOf(7).week === 1 && weekOf(8).week === 2 && weekOf(14).week === 2 && weekOf(15).week === 3 && weekOf(21).week === 3 && weekOf(22).week === 4 && weekOf(28).week === 4, "weekOf");
 ok(WEEKS.every((w) => w.baselineDay === w.firstDay && w.retestDay === w.lastDay), "weeks open with a baseline and end with a re-test");
 // IPA fields use IPA, not capitals (stress is marked with ˈ)
 for (const d of DAYS) for (const x of [...d.produce, ...d.shadow]) if (x.ipa) ok(!/[A-Z]/.test(x.ipa), `Day ${d.day} ${x.id}: capital letter in IPA`);
@@ -112,7 +121,7 @@ for (const d of DAYS) {
   ok(Object.values(q.blocks).reduce((a, b) => a + b, 0) === 30, `Day ${d.day} short blocks add up to 30`);
   ok(q.learn.length === Math.min(SHORT.learn, d.learn.length) && q.listen.length <= SHORT.listen && q.produce.length <= SHORT.produce, `Day ${d.day} short trims content`);
   ok(q.learn.every((x, i, a) => i === 0 || d.learn.indexOf(x) > d.learn.indexOf(a[i - 1])), `Day ${d.day} short keeps learn order`);
-  const baseQ = d.identify.filter((x) => /^(base|b2)-/.test(x.id));
+  const baseQ = d.identify.filter((x) => /^(base|b\d)-/.test(x.id));
   if (baseQ.length) ok(q.identify.length === baseQ.length, `Day ${d.day} short keeps every baseline question`);
   const baseR = d.shadow.filter((x) => x.baseline);
   if (baseR.length) ok(q.shadow.length === baseR.length, `Day ${d.day} short keeps every baseline recording`);

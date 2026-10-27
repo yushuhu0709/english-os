@@ -78,7 +78,7 @@ export function heartbeat(day: number) {
 export const SHORT = { minMinutes: 25, learn: 3, listen: 4, identify: 8, produce: 3, shadow: 2, reviews: 3 };
 export const SHORT_BLOCKS: Record<BlockId, number> = { understand: 6, perceive: 12, shadow: 9, review: 3 };
 
-const isBaseline = (id: string) => /^(base|b2)-/.test(id);
+const isBaseline = (id: string) => /^(base|b\d)-/.test(id);
 
 export function shortPlan(plan: DayPlan): DayPlan {
   const rich = (x: DayPlan["learn"][number]) => !!(x.phonemes?.length || x.bullets?.length || x.visual);

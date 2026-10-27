@@ -2,8 +2,8 @@ import { expect, test } from "@playwright/test";
 import { fakeSpeech } from "./helpers";
 import { runDay } from "./flow";
 
-test("full course: Days 1–14, reviews, Week 1 and Week 2 reports", async ({ page }) => {
-  test.setTimeout(1_200_000);
+test("full course: Days 1–28, reviews, weekly reports and the month comparison", async ({ page }) => {
+  test.setTimeout(2_400_000);
   await fakeSpeech(page);
   await runDay(page, 1, { wrongEvery: 4, issuesOnCompare: true });
   for (const d of [2, 3, 4, 5, 6]) {
@@ -67,7 +67,40 @@ test("full course: Days 1–14, reviews, Week 1 and Week 2 reports", async ({ pa
   await expect(page.getByRole("heading", { name: "第一周发音报告" })).toBeVisible();
 
   await page.goto("/");
-  await expect(page.getByRole("heading", { name: "两周训练已完成" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /今天：Day 15/ })).toBeVisible();
+  await expect(page.getByText("第二周完成了。")).toBeVisible();
+
+  // Week 3
+  await runDay(page, 15, { wrongEvery: 3, shot: "day15" });
+  for (const d of [16, 17, 18, 19, 20]) await runDay(page, d, { wrongEvery: 5, shot: d === 18 || d === 20 ? `day${d}` : undefined });
+  await runDay(page, 21, { wrongEvery: 7 });
+  await page.goto("/progress");
+  await expect(page.getByRole("heading", { name: "第三周日常对话报告" })).toBeVisible();
+  await expect(page.locator("#report").getByText(/基线听辨正确率：Day 15 \d+% → Day 21 \d+%/)).toBeVisible();
+  await expect(page.locator("#report").getByText("6. 第四周要特别留意的三个项目")).toBeVisible();
+  await expect(page.getByTestId("month-compare")).toHaveCount(0);
+
+  // Week 4
+  await runDay(page, 22, { wrongEvery: 3, shot: "day22" });
+  for (const d of [23, 24, 25, 26, 27]) await runDay(page, d, { wrongEvery: 5, shot: d === 26 || d === 27 ? `day${d}` : undefined });
+  await runDay(page, 28, { wrongEvery: 7, shot: "day28" });
+  await page.goto("/progress");
+  await expect(page.getByRole("heading", { name: "第四周与一个月报告" })).toBeVisible();
+  await expect(page.locator("#report").getByText(/基线听辨正确率：Day 22 \d+% → Day 28 \d+%/)).toBeVisible();
+  // the Day 1 passage, recorded on Day 1 and again on Day 28
+  const month = page.getByTestId("month-compare");
+  await expect(month.getByText("整个课程完成 28/28 天", { exact: false })).toBeVisible();
+  expect(await month.getByRole("button", { name: /Day 1\b/ }).count()).toBe(4);
+  expect(await month.getByRole("button", { name: /Day 28\b/ }).count()).toBe(4);
+  await page.screenshot({ path: "test-results/progress-month.png", fullPage: true });
+  const dl3 = page.waitForEvent("download");
+  await page.getByRole("button", { name: "下载 Markdown" }).click();
+  const md4 = require("fs").readFileSync(await (await dl3).path(), "utf8");
+  expect(md4).toContain("# Week 4 Speaking Report");
+  expect(md4).toContain("## 一个月对比：Day 1 与 Day 28");
+
+  await page.goto("/");
+  await expect(page.getByRole("heading", { name: "一个月训练已完成" })).toBeVisible();
   await page.screenshot({ path: "test-results/dashboard-done.png", fullPage: true });
 
   // daily review is fed by the mistakes made along the way
