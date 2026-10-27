@@ -11,6 +11,7 @@ import { WEEKS } from "@/content/days";
 import { activeWeek } from "@/lib/progress";
 import { replaceState, useAppState, type AppState } from "@/lib/store";
 import { useHydrated } from "@/lib/useHydrated";
+import { practiceStreak, recentDays } from "@/lib/practice";
 import { backupNow, restoreFromBackup, useBackupStatus } from "@/lib/backup";
 
 const pct = (x: { n: number; c: number }) => (x.n ? `${Math.round((x.c / x.n) * 100)}%` : "—");
@@ -37,6 +38,7 @@ export default function ProgressPage() {
         </div>
       </div>
       <div className="stack">
+        <Calendar s={s} />
         <History r={r} />
         <Weak r={r} />
         <Compare r={r} />
@@ -45,6 +47,40 @@ export default function ProgressPage() {
         <Backup s={s} />
       </div>
     </div>
+  );
+}
+
+// Last 28 days: minutes of lesson time per day, and whether a daily review was done.
+function Calendar({ s }: { s: AppState }) {
+  const days = recentDays(s, 28);
+  const max = Math.max(30, ...days.map((d) => d.minutes));
+  const active = days.filter((d) => d.minutes >= 1 || d.reviews > 0).length;
+  const streak = practiceStreak(s);
+  return (
+    <section className="card" data-testid="practice-calendar">
+      <div className="row between" style={{ flexWrap: "wrap", gap: 8 }}>
+        <h2 style={{ margin: 0 }}>最近 4 周</h2>
+        <span className="small muted">练了 {active} 天 · 当前连续 {streak} 天</span>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(28, 1fr)", gap: 3, alignItems: "end", height: 90, marginTop: 14 }} role="img" aria-label={`最近 28 天练了 ${active} 天`}>
+        {days.map((d) => (
+          <div
+            key={d.date}
+            title={`${d.date}：${d.minutes} 分钟${d.reviews ? `，复习 ${d.reviews} 项` : ""}`}
+            style={{
+              height: d.minutes ? `${Math.max(8, (d.minutes / max) * 100)}%` : d.reviews ? "8%" : "3%",
+              background: d.minutes ? "var(--accent)" : d.reviews ? "var(--ok)" : "var(--line)",
+              borderRadius: 3,
+            }}
+          />
+        ))}
+      </div>
+      <div className="row between tiny muted" style={{ marginTop: 4 }}>
+        <span>{days[0].date.slice(5)}</span>
+        <span>柱子高度 = 当天课程分钟数；绿色 = 只做了每日复习</span>
+        <span>今天</span>
+      </div>
+    </section>
   );
 }
 

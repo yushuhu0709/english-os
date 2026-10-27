@@ -110,6 +110,7 @@ export interface Settings {
   apiKey?: string; // optional; stored only in this browser
   model: string;
   previewLocked: boolean;
+  reminder?: { enabled: boolean; time: string }; // daily practice reminder (lib/reminderServer.ts)
 }
 
 // Calendar-based daily review (lib/daily.ts), separate from the in-lesson

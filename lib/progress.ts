@@ -103,8 +103,12 @@ export function shortPlan(plan: DayPlan): DayPlan {
   };
 }
 
+// Days are short unless the learner picks the full version. Days finished
+// before short lessons existed stay full (completeDay records the choice).
+export const isShort = (d: DayRecord | undefined) => d?.short ?? !d?.completedAt;
+
 export function planFor(plan: DayPlan, d: DayRecord | undefined): DayPlan {
-  return d?.short ? shortPlan(plan) : plan;
+  return isShort(d) ? shortPlan(plan) : plan;
 }
 
 export function setShort(day: number, short: boolean) {
@@ -185,6 +189,7 @@ export function completeDay(day: number) {
     flush(d, Date.now());
     d.running = false;
     d.runStartedAt = undefined;
+    d.short = isShort(d);
     d.completedAt ??= new Date().toISOString();
     scheduleFromDay(s, day);
   });

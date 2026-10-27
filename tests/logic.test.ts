@@ -8,6 +8,7 @@ import { WEEKS, weekOf } from "../content/days";
 import { addDays, applyDailyResult, dailyQueue, streak, syncDaily, DAILY_INTERVALS } from "../lib/daily";
 import { fileBase, isLocalRequest } from "../lib/backupServer";
 import { initialState } from "../lib/store";
+import { dateKey, lastPracticed, practiceStreak, practicedOn, recentDays, shouldRemind } from "../lib/practice";
 import { courseTexts, matchFile, scriptCsv, textKey } from "../lib/audioLibrary";
 import { planFor, shortPlan, SHORT, dueReviews } from "../lib/progress";
 import { checkAccentDifference } from "../lib/elsa";
@@ -117,7 +118,9 @@ for (const d of DAYS) {
   if (baseR.length) ok(q.shadow.length === baseR.length, `Day ${d.day} short keeps every baseline recording`);
   ok(q.shadow.length > 0 && q.identify.length > 0 && q.learn.length > 0, `Day ${d.day} short is not empty`);
   ok(JSON.stringify(shortPlan(q)) === JSON.stringify(q), `Day ${d.day} shortPlan is idempotent`);
-  ok(planFor(d, undefined) === d, "no record → full plan");
+  ok(JSON.stringify(planFor(d, undefined)) === JSON.stringify(q), "new days are short by default");
+  ok(planFor(d, { short: false } as never) === d, "explicit full version");
+  ok(planFor(d, { completedAt: "2026-10-16T21:18:00Z" } as never) === d, "days finished before short lessons stay full");
 }
 {
   const st = initialState();
@@ -147,6 +150,32 @@ for (const d of DAYS) {
   ok(matchFile(`${shared.ids[1]}.mp3`, texts) === shared, "any id of a shared text matches");
   const csv = scriptCsv(texts);
   ok(csv.split("\n").length === texts.length + 2 && csv.includes('"sheep ship leave live"'), "recording script lists every text");
+}
+
+// practice history and reminder
+{
+  const at = (y: number, m: number, d: number, h = 19) => new Date(y, m - 1, d, h, 0);
+  const seg = (dt: Date, min: number) => ({ start: dt.toISOString(), end: dt.toISOString(), ms: min * 60000, block: "understand" as const });
+  const st = initialState();
+  st.days[1] = { ...st.days[1], log: [seg(at(2026, 10, 24), 20), seg(at(2026, 10, 25), 0.5)] } as never;
+  st.days[2] = { log: [seg(at(2026, 10, 26), 30)] } as never;
+  st.daily = { items: {}, log: { "2026-10-25": ["θ-s"] } };
+  ok(practicedOn(st, "2026-10-25"), "a review alone counts as practice");
+  ok(!practicedOn(st, "2026-10-23"), "no practice on an empty day");
+  ok(practiceStreak(st, "2026-10-26") === 3, "streak counts back from today");
+  ok(practiceStreak(st, "2026-10-27") === 3, "streak still holds before today's practice");
+  ok(practiceStreak(st, "2026-10-28") === 0, "a missed day breaks the streak");
+  ok(lastPracticed(st) === "2026-10-26", "last practised date");
+  const rd = recentDays(st, 7, "2026-10-27");
+  ok(rd.length === 7 && rd[6].date === "2026-10-27" && rd[5].minutes === 30, "recent days oldest first");
+  ok(dateKey(at(2026, 1, 5)) === "2026-01-05", "dateKey pads");
+  const on = { ...st, settings: { ...st.settings, reminder: { enabled: true, time: "20:00" } } };
+  ok(!shouldRemind(st, at(2026, 10, 27, 21), null), "reminder off by default");
+  ok(!shouldRemind(on, at(2026, 10, 27, 19), null), "not before the chosen time");
+  ok(shouldRemind(on, at(2026, 10, 27, 20), null), "fires at the chosen time");
+  ok(!shouldRemind(on, at(2026, 10, 27, 21), "2026-10-27"), "once a day");
+  ok(!shouldRemind(on, at(2026, 10, 26, 21), null), "not on a day already practised");
+  ok(!shouldRemind(on, at(2026, 10, 27, 23), null), "not late at night");
 }
 
 console.log(`logic tests passed: ${n} checks`);
