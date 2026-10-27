@@ -37,7 +37,7 @@ export function stripSecrets(s: AppState): AppState {
   return { ...s, settings };
 }
 
-type ServerFiles = Record<"recordings" | "refAudio" | "images", { id: string }[]>;
+type ServerFiles = Record<"recordings" | "refAudio" | "images", { id: string; meta?: Record<string, unknown> }[]>;
 
 async function serverStatus(): Promise<{ dir: string; savedAt: string | null; files: ServerFiles } | null> {
   const res = await fetch("/api/backup", { cache: "no-store" }).catch(() => null);
@@ -96,8 +96,10 @@ async function runOnce() {
       await upload("recordings", r.id, blob, meta);
       uploaded++;
     }
+    // a sentence's human audio can be replaced, so compare when it was added
+    const refAdded = new Map(st.files.refAudio?.map((f) => [f.id, f.meta?.addedAt]) ?? []);
     for (const r of await allRefAudio()) {
-      if (hasRef.has(r.key)) continue;
+      if (hasRef.has(r.key) && refAdded.get(r.key) === r.addedAt) continue;
       const { blob, ...meta } = r;
       await upload("refAudio", r.key, blob, meta);
       uploaded++;

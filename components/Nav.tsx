@@ -8,6 +8,7 @@ const LINKS = [
   { href: "/bootcamp", label: "Bootcamp" },
   { href: "/review", label: "Daily Review" },
   { href: "/lab", label: "Pronunciation Lab" },
+  { href: "/audio", label: "Audio" },
   { href: "/coach", label: "AI Coach" },
   { href: "/progress", label: "Progress" },
 ];

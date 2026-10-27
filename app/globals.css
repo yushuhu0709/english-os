@@ -131,6 +131,7 @@ input, textarea, select { font: inherit; color: inherit; }
 .notice { border-left: 3px solid var(--warn); background: var(--warn-soft); padding: 10px 14px; border-radius: 6px; font-size: 0.9rem; }
 .notice.info { border-color: var(--accent); background: var(--accent-soft); }
 .notice.bad { border-color: var(--bad); background: var(--bad-soft); }
+.notice.ok { border-color: var(--ok); background: var(--ok-soft); }
 
 /* forms */
 .field { display: flex; flex-direction: column; gap: 4px; }

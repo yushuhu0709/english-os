@@ -83,7 +83,7 @@ export const allRecordings = () => tx<RecordingRow[]>("recordings", "readonly", 
 
 export const saveRefAudio = (row: RefAudioRow) => announce(tx("refAudio", "readwrite", (s) => s.put(row)));
 export const getRefAudio = (text: string) => tx<RefAudioRow | undefined>("refAudio", "readonly", (s) => s.get(normKey(text)));
-export const deleteRefAudio = (text: string) => tx("refAudio", "readwrite", (s) => s.delete(normKey(text)));
+export const deleteRefAudio = (text: string) => announce(tx("refAudio", "readwrite", (s) => s.delete(normKey(text))));
 export const allRefAudio = () => tx<RefAudioRow[]>("refAudio", "readonly", (s) => s.getAll());
 
 export const saveImage = (row: ImageRow) => announce(tx("images", "readwrite", (s) => s.put(row)));
