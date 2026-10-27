@@ -36,6 +36,8 @@ export async function addMinutes(page: Page, day: number, minutes: number) {
     d.runStartedAt = undefined;
     d.blocks.perceive += minutes * 60000;
     d.totalMs += minutes * 60000;
+    const now = new Date().toISOString();
+    d.log.push({ start: now, end: now, ms: minutes * 60000, block: "perceive" });
     localStorage.setItem(key, JSON.stringify(s));
   }, [day, minutes] as const);
 }

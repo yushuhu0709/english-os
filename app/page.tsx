@@ -5,7 +5,8 @@ import { DAY_TITLES, getDay, TOTAL_DAYS, WEEKS, weekOf } from "@/content/days";
 import { STEP_LABEL, STEP_ORDER } from "@/content/types";
 import { DayStrip } from "@/components/DayStrip";
 import { VoiceStatus } from "@/components/Audio";
-import { currentDay, dueReviews, fmtMin, liveRoundMs, planFor, requirements, stepStatus } from "@/lib/progress";
+import { TodayPlan } from "@/components/TodayPlan";
+import { currentDay, dueReviews, fmtMin, isShort, liveRoundMs, planFor, requirements, stepStatus } from "@/lib/progress";
 import { useAppState } from "@/lib/store";
 import { useHydrated, useNow } from "@/lib/useHydrated";
 import { dailyQueue } from "@/lib/daily";
@@ -46,11 +47,12 @@ export default function Dashboard() {
       ) : null}
 
       <VoiceStatus />
+      <TodayPlan s={s} day={day} plan={fullPlan} now={now} />
 
       <div className="grid grid-2" style={{ alignItems: "start", marginTop: 8 }}>
         <section className="card">
           <div className="row between">
-            <h2 style={{ margin: 0 }}>今日任务</h2>
+            <h2 style={{ margin: 0 }}>Day {day} 的步骤</h2>
             {rec?.running ? <span className="badge accent">计时中 {fmtMin(liveRoundMs(rec, now))}</span> : rec?.startedAt ? <span className="badge warn">已暂停 {fmtMin(liveRoundMs(rec, now))}</span> : null}
           </div>
           {weekDone ? (
@@ -78,7 +80,7 @@ export default function Dashboard() {
                 {rec?.startedAt ? "继续今天的训练" : "开始今天的训练"} →
               </Link>
               <p className="tiny muted" style={{ marginTop: 8 }}>
-                {rec?.short ? "短课 · " : ""}目标 {Object.values(plan.blocks).reduce((a, b) => a + b, 0)} 分钟：{plan.blocks.understand} 理解 · {plan.blocks.perceive} 听辨与发音 · {plan.blocks.shadow} 跟读录音 · {plan.blocks.review} 复习
+                {isShort(rec) ? "短课 · " : ""}目标 {Object.values(plan.blocks).reduce((a, b) => a + b, 0)} 分钟：{plan.blocks.understand} 理解 · {plan.blocks.perceive} 听辨与发音 · {plan.blocks.shadow} 跟读录音 · {plan.blocks.review} 复习
               </p>
             </>
           ) : (

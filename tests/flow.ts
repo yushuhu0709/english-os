@@ -8,7 +8,7 @@ export async function runDay(page: Page, day: number, opts: { wrongEvery?: numbe
   await page.goto(`/bootcamp/${day}`);
   const open = page.getByRole("button", { name: "仍然打开" });
   if (await open.isVisible().catch(() => false)) await open.click();
-  if (opts.short) await page.getByRole("button", { name: /短课/ }).click();
+  await page.getByRole("button", { name: opts.short ? /短课 · / : /完整版/ }).click();
   await page.getByRole("button", { name: /开始训练|继续训练/ }).click();
   await expect(page.getByRole("button", { name: /暂停/ }).first()).toBeVisible();
 
